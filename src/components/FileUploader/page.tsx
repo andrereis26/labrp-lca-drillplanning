@@ -2,10 +2,15 @@
 
 import { useState } from 'react';
 import axios from 'axios';
-import feConfig from '@/config/feConfig';
+import config from '@/config/config';
 
-const FileUploader: React.FC = () => {
+interface FileUploaderProps {
+    onFileUpload: (modelName: string) => void;
+}
+
+const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files && event.target.files[0];
@@ -30,16 +35,25 @@ const FileUploader: React.FC = () => {
 
     const uploadFile = async (file: File) => {
         try {
+            setUploading(true);
+
             const formData = new FormData();
             formData.append('file', file);
 
-            await axios.post(feConfig.apiRoutes.base + feConfig.apiRoutes.routes.upload, formData, {
+            const response = await axios.post(config.apiRoutes.base + config.apiRoutes.routes.upload, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+
+            if (response.status === 200) {
+                onFileUpload(response.data.fileName as string);
+            }
+
+            setUploading(false);
         } catch (error) {
             console.error('Error uploading file:', error);
+            setUploading(false);
         }
     };
 

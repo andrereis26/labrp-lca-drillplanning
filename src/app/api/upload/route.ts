@@ -3,7 +3,7 @@ import fs from 'fs';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 const pump = promisify(pipeline);
-import beConfig from "@/config/beConfig";
+import config from "@/config/config";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     // Check if the file type is allowed
     const fileExtension = file.name.split('.').pop() as string;
-    if (!beConfig.uploads.models.type.includes(fileExtension)) {
+    if (!config.uploads.models.type.includes(fileExtension)) {
       return NextResponse.json(
         { message: "Invalid file extension" },
         { status: 400 }
@@ -34,19 +34,19 @@ export async function POST(req: NextRequest) {
     // create a new file name
     const fileName = `${uuidv4()}.obj`;
 
-    // Create a new file path
-    const filePath = `${beConfig.uploads.folder}${fileName}`;
+    // create a new file path
+    const filePath = `${config.uploads.folderToUpload}${fileName}`;
 
-    // Create a readable stream from the file buffer
+    // create a readable stream from the file buffer
     const readStream = Readable.from(buffer);
 
-    // Create a writable stream to save the file
-    const writeStream = fs.createWriteStream(`${beConfig.uploads.folder}${fileName}`);
+    // create a writable stream to save the file
+    const writeStream = fs.createWriteStream(filePath);
 
-    // Pipe the read stream to the write stream
+    // pipe the read stream to the write stream
     await pump(readStream, writeStream);
 
-    return NextResponse.json({ status: "success", data: file.size });
+    return NextResponse.json({ status: "success", fileName: fileName });
 
   }
   catch (e) {
