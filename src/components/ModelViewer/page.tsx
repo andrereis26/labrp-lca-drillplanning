@@ -123,7 +123,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         const textureLoader = new THREE.TextureLoader();
 
         // load OBJ file
-        loader.load(config.uploads.folder + "0e66832b-169f-4282-8c16-82c2b28da046.obj", (loadedObject: THREE.Object3D) => {
+        loader.load(config.uploads.folder + modelName, (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
 
@@ -230,7 +230,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         // clear model from localStorage
         localStorage.removeItem(config.localStorage.modelName);
         // delete file
-        fetch(config.apiRoutes.routes.delete, {
+        fetch(config.apiRoutes.base + config.apiRoutes.routes.delete, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
