@@ -11,7 +11,7 @@ const config = {
   },
 
   apiRoutes: {
-    base: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000/api",
+    base: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000/",
     routes: {
       upload: "api/upload",
       delete: "api/delete",
