@@ -24,8 +24,7 @@ export default function Home() {
       setModelName(modelName);
       setFileUploaded(true);
     }
-  }
-    , []);
+  }, []);
 
   return (
     <div>

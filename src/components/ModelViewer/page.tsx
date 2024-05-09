@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -16,39 +16,50 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
     const controls = useRef<OrbitControls | null>(null);
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
     const camera = useRef<THREE.PerspectiveCamera>(new THREE.PerspectiveCamera(75, 0, 0.1, 5000));
+    // const [controlMode, setControlMode] = useState<'camera' | 'object'>('camera');
 
     useEffect(() => {
         const scene = new THREE.Scene();
         const renderer = new THREE.WebGLRenderer();
 
-
         // check if there's a modelName
-        // if (!modelName) return;
+        if (!modelName) return;
 
 
         if (!containerRef.current) return;
 
         // Initialize camera
         camera.current = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.current.position.set(0, 0, 150);
+        camera.current.lookAt(0, 0, 0);
 
         // Initialize renderer
         renderer.setSize(window.innerWidth, window.innerHeight);
         containerRef.current.appendChild(renderer.domElement);
 
-        // Initialize OrbitControls (only allow zoom)
+        // Initialize OrbitControls 
         controls.current = new OrbitControls(camera.current, renderer.domElement);
         controls.current.enableZoom = true;
-        controls.current.enableRotate = false;
-        controls.current.enableDamping = false;
-        controls.current.enablePan = false;
+        controls.current.enableRotate = true;
+        controls.current.enableDamping = true;
+        controls.current.enablePan = true;
 
         // GUI - controls   
         const gui = new GUI();
+
+        // mode control
+        // const controlSettingsFolder = gui.addFolder('Control Settings');
+        // controlSettingsFolder.add({ controlMode: controlMode }, 'controlMode', ['camera', 'object']).name('Control Mode').onChange((value) => {
+        //     setControlMode(value);
+        // });
+        // controlSettingsFolder.open();
+
         // camera controls
         const cameraFolder = gui.addFolder('Camera');
         cameraFolder.add(camera.current.position, 'x', -1000, 1000).name('X').listen();
         cameraFolder.add(camera.current.position, 'y', -1000, 1000).name('Y').listen();
         cameraFolder.add(camera.current.position, 'z', -1000, 1000).name('Z').listen();
+        cameraFolder.add({ resetCamera: () => resetCameraPosition() }, 'resetCamera').name('Reset Camera');
         cameraFolder.open();
 
         // object controls
@@ -84,9 +95,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         objectFolder.add(objectScale, 'z', 0.1, 10).name('Scale Z').onChange((value) => {
             object.current.scale.z = value;
         });
+        objectFolder.add({ resetObject: () => resetObjectPositionAndScale() }, 'resetObject').name('Reset Object');
         objectFolder.open();
-
-
 
         // resize renderer on window resize
         const handleResize = () => {
@@ -99,27 +109,20 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
             renderer.setSize(width, height);
         };
 
-        window.addEventListener('resize', handleResize);
-
-
-        // Initialize camera position
-        camera.current.position.set(-100, -100, -200);
-        camera.current.lookAt(0, 0, 0);
-
-        // Add ambient light to the scene
+        // add ambient light to the scene
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        // Add directional light to the scene
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(0, 1, 1);
-        scene.add(directionalLight);
+        // add directional light to the scene
+        // const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        // directionalLight.position.set(0, 1, 1);
+        // scene.add(directionalLight);
 
-        // Load model
+        // load model
         const loader = new OBJLoader();
         const textureLoader = new THREE.TextureLoader();
 
-        // Load OBJ file
+        // load OBJ file
         loader.load(config.uploads.folder + "0e66832b-169f-4282-8c16-82c2b28da046.obj", (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
@@ -145,50 +148,55 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
             (error) => console.error('An error happened', error)
         );
 
-        // Add a cube to the scene
-        // const cubeGeometry = new THREE.BoxGeometry();
-        // const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        // const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-        // cube.scale.set(6, 6, 6); // Adjust scale as needed
-        // scene.add(cube);
 
-
-        // Animation loop
+        // animation loop
         const animate = () => {
-
-            // Rotate models
-            // cube.rotation.x += 0.01;
-            // cube.rotation.y += 0.01;
-
             controls.current?.update();
             renderer.render(scene, camera.current);
             requestAnimationFrame(animate);
-
         };
+
+        // event listeners
+        window.addEventListener('resize', handleResize);        // resize renderer on window resize
 
         animate();
 
-        // Cleanup on unmount
+        // cleanup on unmount
         return () => {
             window.removeEventListener('resize', handleResize);
             renderer.dispose();
         };
     }, [modelName]);
 
-    // // Function to handle mouse movement
+    // reset camera position
+    const resetCameraPosition = () => {
+        camera.current.position.set(0, 0, 150);
+        camera.current.lookAt(0, 0, 0);
+    };
+
+    // reset object position and scale
+    const resetObjectPositionAndScale = () => {
+        object.current.position.set(0, 0, 0);
+        object.current.scale.set(1, 1, 1);
+    };
+
+    // handle mouse move event to rotate object
     // const handleMouseMove = (event: MouseEvent) => {
-    //     if (event.buttons === 2) { // Check if right mouse button is pressed
-    //         const mouseX = event.clientX / window.innerWidth * 2 - 1;
+    //     if (event.buttons === 2) {
+    //         console.log(controlMode)
+    //     }
+    //     if (controlMode === 'object' && event.buttons === 2) {
+    //         console.log('handleMouseMove');
+    //         const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
     //         const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
 
     //         const raycaster = new THREE.Raycaster();
     //         const mouseVector = new THREE.Vector2(mouseX, mouseY);
-    //         raycaster.setFromCamera(mouseVector, camera);
+    //         raycaster.setFromCamera(mouseVector, camera.current);
 
     //         const intersects = raycaster.intersectObject(object.current, true);
 
     //         if (intersects.length > 0) {
-    //             // Rotate the object based on mouse movement
     //             const intersection = intersects[0];
     //             const point = intersection.point;
     //             const normal = intersection.face!.normal;
@@ -197,33 +205,52 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
     //     }
     // };
 
-    // // Add contextmenu event listener
+    // add event listener for mouse move only when controlMode is 'object'
     // useEffect(() => {
-    //     window.addEventListener('mousemove', handleMouseMove);
+    //     if (controlMode !== 'object') return
 
-    //     // Cleanup on unmount
+    //     window.addEventListener('mousemove', handleMouseMove);
     //     return () => {
     //         window.removeEventListener('mousemove', handleMouseMove);
     //     };
-    // }, []);
+
+    // }, [controlMode]);
+
+    // update controls based on controlMode
+    // useEffect(() => {
+    //     if (controls.current) {
+    //         controls.current.enableRotate = controlMode === 'camera';
+    //         controls.current.enablePan = controlMode === 'camera';
+    //     }
+    // }, [controlMode]);
+
 
     // handle exit button
     const handleExit = () => {
         // clear model from localStorage
         localStorage.removeItem(config.localStorage.modelName);
+        // delete file
+        fetch(config.apiRoutes.routes.delete, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ modelName: modelName })
+        });
+
         // reload the page
         window.location.reload();
     }
 
     return (
         <div ref={containerRef} >
-                {/* exit button in the top left corner */}
-                <button
-                    className="absolute top-0 left-0 m-4 p-2 bg-gray-800 hover:bg-red-700 text-white rounded"
-                    onClick={handleExit}
-                >
-                    Exit
-                </button>
+            {/* exit button in the top left corner */}
+            <button
+                className="absolute top-0 left-0 m-4 p-2 bg-gray-800 hover:bg-red-700 text-white rounded"
+                onClick={handleExit}
+            >
+                Exit
+            </button>
         </div>
     );
 };
