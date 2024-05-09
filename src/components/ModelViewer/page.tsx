@@ -9,10 +9,10 @@ import config from "@/config/config";
 import axios from "axios";
 
 interface ModelViewerProps {
-    modelName: string;
+    modelUrl: string;
 }
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
+const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const controls = useRef<OrbitControls | null>(null);
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
@@ -24,7 +24,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         const renderer = new THREE.WebGLRenderer();
 
         // check if there's a modelName
-        if (!modelName) return;
+        if (!modelUrl) return;
 
 
         if (!containerRef.current) return;
@@ -124,7 +124,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         const textureLoader = new THREE.TextureLoader();
 
         // load OBJ file
-        loader.load(config.uploads.folder + modelName, (loadedObject: THREE.Object3D) => {
+        loader.load(modelUrl, (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
 
@@ -167,7 +167,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
             window.removeEventListener('resize', handleResize);
             renderer.dispose();
         };
-    }, [modelName]);
+    }, [modelUrl]);
 
     // reset camera position
     const resetCameraPosition = () => {
@@ -229,12 +229,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
     // handle exit button
     const handleExit = () => {
         // clear model from localStorage
-        localStorage.removeItem(config.localStorage.modelName);
+        localStorage.removeItem(config.localStorage.modelUrl);
 
         // delete file 
-        const response = axios.delete(config.apiRoutes.routes.delete, {
-            data: { modelName: modelName }
-        });
+        // const response = axios.delete(config.apiRoutes.routes.delete, {
+        //     data: { modelName: modelUrl }
+        // });
 
         // reload the page
         window.location.reload();

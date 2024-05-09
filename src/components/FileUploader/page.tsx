@@ -5,7 +5,7 @@ import config from '@/config/config';
 import { FaFileUpload } from "react-icons/fa";
 
 interface FileUploaderProps {
-    onFileUpload: (modelName: string) => void;
+    onFileUpload: (url: string) => void;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
@@ -52,7 +52,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
             });
 
             if (response.status === 200) {
-                onFileUpload(response.data.fileName as string);
+                onFileUpload(response.data.url as string);
             }
 
             setUploading(false);

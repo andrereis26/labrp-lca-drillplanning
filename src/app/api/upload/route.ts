@@ -3,8 +3,9 @@ import fs from 'fs';
 import { Readable, pipeline } from 'stream';
 import { promisify } from 'util';
 const pump = promisify(pipeline);
-import config from "@/config/config";
 import { v4 as uuidv4 } from "uuid";
+import config from "@/config/config";
+import { storage } from "@/lib/firebaseAdmin";
 
 // upload file to server
 export async function POST(req: NextRequest) {
@@ -41,13 +42,25 @@ export async function POST(req: NextRequest) {
     // create a readable stream from the file buffer
     const readStream = Readable.from(buffer);
 
+    // upload file to Firebase Storage
+    const fileStream = storage.bucket().file(fileName).createWriteStream();
+    fileStream.write(buffer);
+    fileStream.end();
+
+    // generate download URL with very distant future expiration time
+    const expirationTime = new Date('9999-12-31T23:59:59Z');
+    const downloadURL = await storage.bucket().file(fileName).getSignedUrl({
+      action: 'read',
+      expires: expirationTime
+    });
+
     // create a writable stream to save the file
     const writeStream = fs.createWriteStream(filePath);
 
     // pipe the read stream to the write stream
     await pump(readStream, writeStream);
 
-    return NextResponse.json({ status: "success", fileName: fileName });
+    return NextResponse.json({ status: "success", url: downloadURL });
 
   }
   catch (e) {

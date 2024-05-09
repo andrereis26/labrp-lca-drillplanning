@@ -7,21 +7,21 @@ import React, { useEffect, useState } from "react";
 
 export default function Home() {
   const [fileUploaded, setFileUploaded] = useState(false);
-  const [modelName, setModelName] = useState<string>("");
+  const [modelUrl, setModelUrl] = useState<string>("");
 
-  const handleFileUpload = (modelName: string) => {
-    setModelName(modelName);
+  const handleFileUpload = (modelUrl: string) => {
+    setModelUrl(modelUrl);
     setFileUploaded(true);
 
     // save modelName to localStorage
-    localStorage.setItem(config.localStorage.modelName, modelName);
+    localStorage.setItem(config.localStorage.modelUrl, modelUrl);
   };
 
   // on mount check if there's a modelName in localStorage
   useEffect(() => {
-    const modelName = localStorage.getItem(config.localStorage.modelName);
-    if (modelName) {
-      setModelName(modelName);
+    const modelUrl = localStorage.getItem(config.localStorage.modelUrl);
+    if (modelUrl) {
+      setModelUrl(modelUrl);
       setFileUploaded(true);
     }
   }, []);
@@ -31,7 +31,7 @@ export default function Home() {
       {!fileUploaded ? (
         <FileUploader onFileUpload={handleFileUpload} />
       ) : (
-        <ModelViewer modelName={modelName} />
+        <ModelViewer modelUrl={modelUrl} />
       )}
       {/* <ModelViewer modelName={modelName} /> */}
     </div>
