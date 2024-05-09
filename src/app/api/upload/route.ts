@@ -48,10 +48,9 @@ export async function POST(req: NextRequest) {
     fileStream.end();
 
     // generate download URL with very distant future expiration time
-    const expirationTime = new Date('9999-12-31T23:59:59Z');
     const downloadURL = await storage.bucket().file(fileName).getSignedUrl({
       action: 'read',
-      expires: expirationTime
+      expires: config.firebase.expirationTime
     });
 
     // create a writable stream to save the file

@@ -15,6 +15,7 @@ const config = {
     routes: {
       upload: "api/upload",
       delete: "api/delete",
+      files: "api/files",
     },
   },
 
@@ -22,6 +23,9 @@ const config = {
     modelUrl: "@LabRP-LCA:model",
   },
 
+  firebase: {
+    expirationTime: new Date('9999-12-31T23:59:59Z'),
+  }
 
 };
 
