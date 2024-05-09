@@ -18,7 +18,7 @@ const config = {
   },
 
   localStorage: {
-
+    modelName: "@LabRP-LCA:model",
   },
 
 

@@ -36,7 +36,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         containerRef.current.appendChild(renderer.domElement);
 
         // Initialize OrbitControls (only allow zoom)
-        controls.current = new OrbitControls( camera.current, renderer.domElement);
+        controls.current = new OrbitControls(camera.current, renderer.domElement);
         controls.current.enableZoom = true;
         controls.current.enableRotate = false;
         controls.current.enableDamping = false;
@@ -46,9 +46,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         const gui = new GUI();
         // camera controls
         const cameraFolder = gui.addFolder('Camera');
-        cameraFolder.add( camera.current.position, 'x', -1000, 1000).name('X').listen();
-        cameraFolder.add( camera.current.position, 'y', -1000, 1000).name('Y').listen();
-        cameraFolder.add( camera.current.position, 'z', -1000, 1000).name('Z').listen();
+        cameraFolder.add(camera.current.position, 'x', -1000, 1000).name('X').listen();
+        cameraFolder.add(camera.current.position, 'y', -1000, 1000).name('Y').listen();
+        cameraFolder.add(camera.current.position, 'z', -1000, 1000).name('Z').listen();
         cameraFolder.open();
 
         // object controls
@@ -120,7 +120,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
         const textureLoader = new THREE.TextureLoader();
 
         // Load OBJ file
-        loader.load(config.uploads.folder + modelName, (loadedObject: THREE.Object3D) => {
+        loader.load(config.uploads.folder + "0e66832b-169f-4282-8c16-82c2b28da046.obj", (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
 
@@ -161,7 +161,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
             // cube.rotation.y += 0.01;
 
             controls.current?.update();
-            renderer.render(scene,  camera.current);
+            renderer.render(scene, camera.current);
             requestAnimationFrame(animate);
 
         };
@@ -207,7 +207,25 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
     //     };
     // }, []);
 
-    return <div ref={containerRef} />;
+    // handle exit button
+    const handleExit = () => {
+        // clear model from localStorage
+        localStorage.removeItem(config.localStorage.modelName);
+        // reload the page
+        window.location.reload();
+    }
+
+    return (
+        <div ref={containerRef} >
+                {/* exit button in the top left corner */}
+                <button
+                    className="absolute top-0 left-0 m-4 p-2 bg-gray-800 hover:bg-red-700 text-white rounded"
+                    onClick={handleExit}
+                >
+                    Exit
+                </button>
+        </div>
+    );
 };
 
 export default ModelViewer;
