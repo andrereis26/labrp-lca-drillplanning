@@ -6,6 +6,7 @@ import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import config from "@/config/config";
+import axios from "axios";
 
 interface ModelViewerProps {
     modelName: string;
@@ -229,13 +230,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelName }) => {
     const handleExit = () => {
         // clear model from localStorage
         localStorage.removeItem(config.localStorage.modelName);
-        // delete file
-        fetch(config.apiRoutes.base + config.apiRoutes.routes.delete, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ modelName: modelName })
+
+        // delete file 
+        const response = axios.delete(config.apiRoutes.routes.delete, {
+            data: { modelName: modelName }
         });
 
         // reload the page

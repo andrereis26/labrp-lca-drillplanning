@@ -41,7 +41,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await axios.post(config.apiRoutes.base + config.apiRoutes.routes.upload, formData, {
+            const response = await axios.post(config.apiRoutes.routes.upload, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
