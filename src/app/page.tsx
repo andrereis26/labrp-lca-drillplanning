@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import FileUploader from "@/components/FileUploader/page";
-import ModelViewer from "@/components/ModelViewer/page";
 import DashboardPanel from "@/components/DashboardPanel/page";
 
 export default function Home() {
