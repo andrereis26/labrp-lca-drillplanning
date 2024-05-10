@@ -24,7 +24,8 @@ async function getData(file: string) {
 const ModelViewerPage = async ({ params }: { params: { file: string } }) => {
 
     // get model URL from server side
-    const { file } = await getData(params.file) as { file: File }
+    const data = await getData(params.file) 
+    const file = data?.file as File ?? null
 
     // if error redirect to home page
     if (!file) {
