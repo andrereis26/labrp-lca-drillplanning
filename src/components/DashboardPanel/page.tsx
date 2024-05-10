@@ -5,9 +5,26 @@ import { File } from '@/models/File';
 import { useState, useEffect } from 'react';
 import FileTable from './FilesTable/page';
 
-const DashboardPanel = () => {
+interface DashboardPanelProps {
+    fileUploaded: number;
+}
+
+const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
     const [files, setFiles] = useState<File[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+
+    // get files from server
+    const getFiles = async () => {
+        try {
+            const response = await fetch(config.apiRoutes.routes.files);
+            if (response.status === 200) {
+                const data = await response.json();
+                setFiles(data.files);
+            }
+        } catch (error) {
+            // console.error("Error:", error);
+        }
+    }
 
     // TODO: handle delete selected files
     const handleDelete = async () => {
@@ -29,20 +46,8 @@ const DashboardPanel = () => {
 
     //   TODO: use useSWR hook for this
     useEffect(() => {
-        const getFiles = async () => {
-            try {
-                const response = await fetch(config.apiRoutes.routes.files);
-                if (response.status === 200) {
-                    const data = await response.json();
-                    setFiles(data.files);
-                }
-            } catch (error) {
-                console.error("Error:", error);
-            }
-        }
-
         getFiles();
-    }, []);
+    }, [fileUploaded]);
 
     return (
         <div>
@@ -53,6 +58,7 @@ const DashboardPanel = () => {
                 <FileTable files={files}
                     selectedFiles={selectedFiles}
                     setSelectedFiles={setSelectedFiles}
+                    getFiles={getFiles}
                 />
             </div>
 

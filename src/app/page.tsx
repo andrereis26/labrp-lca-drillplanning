@@ -7,34 +7,25 @@ import DashboardPanel from "@/components/DashboardPanel/page";
 import config from "@/config/config";
 
 export default function Home() {
-  const [modelUrl, setModelUrl] = useState<string>("");
+  const [fileUploaded, setFileUploaded] = useState<number>(0);
 
-  const handleFileUpload = (modelUrl: string) => {
-    setModelUrl(modelUrl);
-
-    // save modelName to localStorage
-    localStorage.setItem(config.localStorage.modelUrl, modelUrl);
+  // handle file upload
+  const handleFileUpload = () => {
+    let newNum = fileUploaded + 1;
+    setFileUploaded(newNum);
   };
-
-  // on mount check if there's a modelName in localStorage
-  useEffect(() => {
-    const modelUrl = localStorage.getItem(config.localStorage.modelUrl);
-    if (modelUrl) {
-      setModelUrl(modelUrl);
-    }
-  }, []);
 
   return (
     <div className="min-h-screen flex justify-center bg-gray-100">
 
       {/* Dashboard panel component */}
       <div className="flex justify-center">
-        <DashboardPanel />
+        <DashboardPanel fileUploaded={fileUploaded}/>
       </div>
 
       {/* File uploader component */}
       <div className="flex items-center justify-center">
-        <FileUploader onFileUpload={handleFileUpload} />
+        <FileUploader  onFileUpload={handleFileUpload}/>
       </div>
     </div>
   );
