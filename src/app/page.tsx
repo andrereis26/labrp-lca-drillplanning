@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import FileUploader from "@/components/FileUploader/page";
 import ModelViewer from "@/components/ModelViewer/page";
 import DashboardPanel from "@/components/DashboardPanel/page";
-import config from "@/config/config";
 
 export default function Home() {
   const [fileUploaded, setFileUploaded] = useState<number>(0);
@@ -16,15 +15,15 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center bg-gray-100">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
 
       {/* Dashboard panel component */}
-      <div className="flex justify-center">
+      <div className="mb-4">
         <DashboardPanel fileUploaded={fileUploaded}/>
       </div>
 
       {/* File uploader component */}
-      <div className="flex items-center justify-center">
+      <div>
         <FileUploader  onFileUpload={handleFileUpload}/>
       </div>
     </div>
