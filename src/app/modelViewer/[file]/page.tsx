@@ -29,8 +29,9 @@ const ModelViewerPage = ({ params }: { params: { file: string } }) => {
     useEffect(() => {
         const loadData = async () => {
             const data = await fetchData(params.file);
+            console.log(data);
             if (!data) {
-                router.push(config.pageRoutes.home);
+                // router.push(config.pageRoutes.home);
                 return;
             }
             setFile(data.file);
