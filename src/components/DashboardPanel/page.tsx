@@ -30,10 +30,14 @@ const DashboardPanel = () => {
     //   TODO: use useSWR hook for this
     useEffect(() => {
         const getFiles = async () => {
-            const response = await fetch(config.apiRoutes.routes.files);
-            if (response.status === 200) {
-                const data = await response.json();
-                setFiles(data.files);
+            try {
+                const response = await fetch(config.apiRoutes.routes.files);
+                if (response.status === 200) {
+                    const data = await response.json();
+                    setFiles(data.files);
+                }
+            } catch (error) {
+                console.error("Error:", error);
             }
         }
 

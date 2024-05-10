@@ -36,11 +36,11 @@ export async function POST(req: NextRequest) {
     // create a new file name
     const fileName = `${uuidv4()}.obj`;
 
-    // create a new file path
-    const filePath = `${config.uploads.folderToUpload}${fileName}`;
+    // // create a new file path
+    // const filePath = `${config.uploads.folderToUpload}${fileName}`;
 
-    // create a readable stream from the file buffer
-    const readStream = Readable.from(buffer);
+    // // create a readable stream from the file buffer
+    // const readStream = Readable.from(buffer);
 
     // upload file to Firebase Storage
     const fileStream = storage.bucket().file(fileName).createWriteStream();
@@ -53,11 +53,11 @@ export async function POST(req: NextRequest) {
       expires: config.firebase.expirationTime
     });
 
-    // create a writable stream to save the file
-    const writeStream = fs.createWriteStream(filePath);
+    // // create a writable stream to save the file
+    // const writeStream = fs.createWriteStream(filePath);
 
-    // pipe the read stream to the write stream
-    await pump(readStream, writeStream);
+    // // pipe the read stream to the write stream
+    // await pump(readStream, writeStream);
 
     return NextResponse.json({ status: "success", url: downloadURL });
 

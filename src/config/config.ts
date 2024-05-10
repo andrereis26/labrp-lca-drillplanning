@@ -10,6 +10,11 @@ const config = {
     folderToUpload: "public/models/",
   },
 
+  pageRoutes:{
+    home: "/",
+    modelViewer: "/modelViewer/",
+  },
+
   apiRoutes: {
     base: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000/",
     routes: {

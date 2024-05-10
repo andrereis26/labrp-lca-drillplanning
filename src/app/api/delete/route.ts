@@ -13,7 +13,7 @@ export async function DELETE(req: NextRequest) {
 
         // delete the file
         fs.unlinkSync(filePath);
-        console.log(`File ${modelName} deleted`);
+        // console.log(`File ${modelName} deleted`);
 
         return NextResponse.json({ status: "success" });
     }

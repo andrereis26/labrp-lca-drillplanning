@@ -63,7 +63,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        
             <div
                 className="border-4 border-dashed border-gray-400 rounded-lg p-10"
                 onDrop={handleDrop}
@@ -121,7 +121,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
                     </div>
                 )}
             </div>
-        </div>
+   
     );
 };
 
