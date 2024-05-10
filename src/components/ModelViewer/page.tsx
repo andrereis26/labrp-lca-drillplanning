@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -14,8 +14,8 @@ interface ModelViewerProps {
 
 const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const router = useRouter();
-    const renderer = useRef<THREE.WebGLRenderer>(new THREE.WebGLRenderer());
-    const gui = useRef<GUI>(new GUI());
+    const renderer = useRef<THREE.WebGLRenderer>();
+    const gui = useRef<GUI>();
     const containerRef = useRef<HTMLDivElement>(null);
     const controls = useRef<OrbitControls | null>(null);
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
@@ -23,6 +23,11 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     // const [controlMode, setControlMode] = useState<'camera' | 'object'>('camera');
 
     useEffect(() => {
+      
+        // initialize renderer
+        renderer.current = new THREE.WebGLRenderer();
+
+        // initialize scene
         const scene = new THREE.Scene();
 
         // check if there's a modelName
@@ -80,37 +85,26 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         };
 
         // Add controls for position and scale
-        objectFolder.add(objectPosition, 'x', -1000, 1000).name('X').onChange((value : number) => {
+        objectFolder.add(objectPosition, 'x', -1000, 1000).name('X').onChange((value: number) => {
             object.current.position.x = value;
         });
-        objectFolder.add(objectPosition, 'y', -1000, 1000).name('Y').onChange((value:number) => {
+        objectFolder.add(objectPosition, 'y', -1000, 1000).name('Y').onChange((value: number) => {
             object.current.position.y = value;
         });
-        objectFolder.add(objectPosition, 'z', -1000, 1000).name('Z').onChange((value:number) => {
+        objectFolder.add(objectPosition, 'z', -1000, 1000).name('Z').onChange((value: number) => {
             object.current.position.z = value;
         });
-        objectFolder.add(objectScale, 'x', 0.1, 10).name('Scale X').onChange((value:number) => {
+        objectFolder.add(objectScale, 'x', 0.1, 10).name('Scale X').onChange((value: number) => {
             object.current.scale.x = value;
         });
-        objectFolder.add(objectScale, 'y', 0.1, 10).name('Scale Y').onChange((value:number) => {
+        objectFolder.add(objectScale, 'y', 0.1, 10).name('Scale Y').onChange((value: number) => {
             object.current.scale.y = value;
         });
-        objectFolder.add(objectScale, 'z', 0.1, 10).name('Scale Z').onChange((value:number) => {
+        objectFolder.add(objectScale, 'z', 0.1, 10).name('Scale Z').onChange((value: number) => {
             object.current.scale.z = value;
         });
         objectFolder.add({ resetObject: () => resetObjectPositionAndScale() }, 'resetObject').name('Reset Object');
         objectFolder.open();
-
-        // resize renderer on window resize
-        const handleResize = () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            camera.current.aspect = width / height;
-            camera.current.updateProjectionMatrix();
-
-            renderer.current.setSize(width, height);
-        };
 
         // add ambient light to the scene
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -155,34 +149,38 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         // animation loop
         const animate = () => {
             controls.current?.update();
-            renderer.current.render(scene, camera.current);
+            renderer.current?.render(scene, camera.current);
             requestAnimationFrame(animate);
         };
-
-        // event listeners
-        window.addEventListener('resize', handleResize);        // resize renderer on window resize
 
         animate();
 
         // cleanup on unmount
         return () => {
-            window.removeEventListener('resize', handleResize);
-            gui.current.destroy();
-            renderer.current.dispose();
+            gui.current?.destroy();
+            renderer.current?.dispose();
         };
     }, [modelUrl]);
 
-    // reset camera position
-    const resetCameraPosition = () => {
-        camera.current.position.set(0, 0, 150);
-        camera.current.lookAt(0, 0, 0);
-    };
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
 
-    // reset object position and scale
-    const resetObjectPositionAndScale = () => {
-        object.current.position.set(0, 0, 0);
-        object.current.scale.set(1, 1, 1);
-    };
+        const handleResize = () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            camera.current.aspect = width / height;
+            camera.current.updateProjectionMatrix();
+
+            renderer.current?.setSize(width, height);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     // handle mouse move event to rotate object
     // const handleMouseMove = (event: MouseEvent) => {
@@ -228,6 +226,17 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     //     }
     // }, [controlMode]);
 
+    // reset camera position
+    const resetCameraPosition = () => {
+        camera.current.position.set(0, 0, 150);
+        camera.current.lookAt(0, 0, 0);
+    };
+
+    // reset object position and scale
+    const resetObjectPositionAndScale = () => {
+        object.current.position.set(0, 0, 0);
+        object.current.scale.set(1, 1, 1);
+    };
 
     // handle exit button
     const handleExit = () => {

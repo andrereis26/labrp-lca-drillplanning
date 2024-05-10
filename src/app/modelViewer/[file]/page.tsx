@@ -29,7 +29,7 @@ const ModelViewerPage = async ({ params }: { params: { file: string } }) => {
 
     // if error redirect to home page
     if (!file) {
-        // redirect('/')
+        redirect('/')
     }
 
     return (
