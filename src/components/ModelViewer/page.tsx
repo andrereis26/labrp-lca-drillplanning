@@ -1,15 +1,33 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import config from "@/config/config";
 import { useRouter } from 'next/navigation'
+import { File } from "@/models/File";
 
 interface ModelViewerProps {
     modelUrl: string;
+}
+
+async function getData(file: string) {
+    try {
+        const url = `${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file}`
+        const res = await fetch(url);
+
+        if (!res.ok) {
+            return null;
+        }
+
+        return res.json()
+    } catch (error) {
+        // console.error("Error:", error)
+        return null;
+    }
+
 }
 
 const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
@@ -21,9 +39,19 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
     const camera = useRef<THREE.PerspectiveCamera>(new THREE.PerspectiveCamera(75, 0, 0.1, 5000));
     // const [controlMode, setControlMode] = useState<'camera' | 'object'>('camera');
+    const [file, setFile] = useState<File>({
+        name: "",
+        downloadURL: ""
+    });
 
     useEffect(() => {
-      
+      console.log(modelUrl)
+        const fetchData = async () => {
+            const data = await getData(modelUrl);
+            setFile(data);
+        }
+        fetchData();
+
         // initialize renderer
         renderer.current = new THREE.WebGLRenderer();
 
@@ -120,7 +148,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         const textureLoader = new THREE.TextureLoader();
 
         // load OBJ file
-        loader.load(modelUrl, (loadedObject: THREE.Object3D) => {
+        loader.load(file.downloadURL, (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
 
@@ -180,7 +208,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, []);
+    }, [modelUrl]);
 
     // handle mouse move event to rotate object
     // const handleMouseMove = (event: MouseEvent) => {

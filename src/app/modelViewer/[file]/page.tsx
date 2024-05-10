@@ -1,7 +1,10 @@
+"use client";
+
 import ModelViewer from "@/components/ModelViewer/page";
 import config from "@/config/config";
 import { File } from "@/models/File";
 import { redirect } from 'next/navigation'
+import { useEffect, useState } from "react";
 
 // get model URL from server side
 async function getData(file: string) {
@@ -21,20 +24,25 @@ async function getData(file: string) {
 
 }
 
-const ModelViewerPage = async ({ params }: { params: { file: string } }) => {
+const ModelViewerPage = ({ params }: { params: { file: string } }) => {
+    const [file, setFile] = useState<File>({
+        name: "",
+        downloadURL: ""
+    });
 
     // get model URL from server side
-    const data = await getData(params.file) 
-    const file = data?.file as File ?? null
+    useEffect(() => {
+        const fetchData = async () => {
+            const data = await getData(params.file);
+            setFile(data);
+        }
+        fetchData();
+    }, [params.file])
 
-    // if error redirect to home page
-    if (!file) {
-        redirect('/')
-    }
 
     return (
         <div>
-            <ModelViewer modelUrl={file.downloadURL} />
+            <ModelViewer modelUrl={params.file} />
         </div>
     );
 }
