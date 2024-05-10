@@ -6,13 +6,16 @@ import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import config from "@/config/config";
-import axios from "axios";
+import { useRouter } from 'next/navigation'
 
 interface ModelViewerProps {
     modelUrl: string;
 }
 
 const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
+    const router = useRouter();
+    const renderer = useRef<THREE.WebGLRenderer>(new THREE.WebGLRenderer());
+    const gui = useRef<GUI>(new GUI());
     const containerRef = useRef<HTMLDivElement>(null);
     const controls = useRef<OrbitControls | null>(null);
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
@@ -21,7 +24,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
 
     useEffect(() => {
         const scene = new THREE.Scene();
-        const renderer = new THREE.WebGLRenderer();
 
         // check if there's a modelName
         if (!modelUrl) return;
@@ -35,28 +37,28 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         camera.current.lookAt(0, 0, 0);
 
         // Initialize renderer
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        containerRef.current.appendChild(renderer.domElement);
+        renderer.current.setSize(window.innerWidth, window.innerHeight);
+        containerRef.current.appendChild(renderer.current.domElement);
 
         // Initialize OrbitControls 
-        controls.current = new OrbitControls(camera.current, renderer.domElement);
+        controls.current = new OrbitControls(camera.current, renderer.current.domElement);
         controls.current.enableZoom = true;
         controls.current.enableRotate = true;
         controls.current.enableDamping = true;
         controls.current.enablePan = true;
 
         // GUI - controls   
-        const gui = new GUI();
+        gui.current = new GUI();
 
         // mode control
-        // const controlSettingsFolder = gui.addFolder('Control Settings');
+        // const controlSettingsFolder = gui.current.addFolder('Control Settings');
         // controlSettingsFolder.add({ controlMode: controlMode }, 'controlMode', ['camera', 'object']).name('Control Mode').onChange((value) => {
         //     setControlMode(value);
         // });
         // controlSettingsFolder.open();
 
         // camera controls
-        const cameraFolder = gui.addFolder('Camera');
+        const cameraFolder = gui.current.addFolder('Camera');
         cameraFolder.add(camera.current.position, 'x', -1000, 1000).name('X').listen();
         cameraFolder.add(camera.current.position, 'y', -1000, 1000).name('Y').listen();
         cameraFolder.add(camera.current.position, 'z', -1000, 1000).name('Z').listen();
@@ -64,7 +66,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         cameraFolder.open();
 
         // object controls
-        const objectFolder = gui.addFolder('Object');
+        const objectFolder = gui.current.addFolder('Object');
         const objectPosition = {
             x: object.current.position.x,
             y: object.current.position.y,
@@ -78,22 +80,22 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         };
 
         // Add controls for position and scale
-        objectFolder.add(objectPosition, 'x', -1000, 1000).name('X').onChange((value) => {
+        objectFolder.add(objectPosition, 'x', -1000, 1000).name('X').onChange((value : number) => {
             object.current.position.x = value;
         });
-        objectFolder.add(objectPosition, 'y', -1000, 1000).name('Y').onChange((value) => {
+        objectFolder.add(objectPosition, 'y', -1000, 1000).name('Y').onChange((value:number) => {
             object.current.position.y = value;
         });
-        objectFolder.add(objectPosition, 'z', -1000, 1000).name('Z').onChange((value) => {
+        objectFolder.add(objectPosition, 'z', -1000, 1000).name('Z').onChange((value:number) => {
             object.current.position.z = value;
         });
-        objectFolder.add(objectScale, 'x', 0.1, 10).name('Scale X').onChange((value) => {
+        objectFolder.add(objectScale, 'x', 0.1, 10).name('Scale X').onChange((value:number) => {
             object.current.scale.x = value;
         });
-        objectFolder.add(objectScale, 'y', 0.1, 10).name('Scale Y').onChange((value) => {
+        objectFolder.add(objectScale, 'y', 0.1, 10).name('Scale Y').onChange((value:number) => {
             object.current.scale.y = value;
         });
-        objectFolder.add(objectScale, 'z', 0.1, 10).name('Scale Z').onChange((value) => {
+        objectFolder.add(objectScale, 'z', 0.1, 10).name('Scale Z').onChange((value:number) => {
             object.current.scale.z = value;
         });
         objectFolder.add({ resetObject: () => resetObjectPositionAndScale() }, 'resetObject').name('Reset Object');
@@ -107,7 +109,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
             camera.current.aspect = width / height;
             camera.current.updateProjectionMatrix();
 
-            renderer.setSize(width, height);
+            renderer.current.setSize(width, height);
         };
 
         // add ambient light to the scene
@@ -153,7 +155,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         // animation loop
         const animate = () => {
             controls.current?.update();
-            renderer.render(scene, camera.current);
+            renderer.current.render(scene, camera.current);
             requestAnimationFrame(animate);
         };
 
@@ -165,7 +167,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         // cleanup on unmount
         return () => {
             window.removeEventListener('resize', handleResize);
-            renderer.dispose();
+            gui.current.destroy();
+            renderer.current.dispose();
         };
     }, [modelUrl]);
 
@@ -236,8 +239,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         //     data: { modelName: modelUrl }
         // });
 
-        // reload the page
-        window.location.reload();
+        // redirect to dashboard
+        router.push(config.pageRoutes.home);
     }
 
     return (
