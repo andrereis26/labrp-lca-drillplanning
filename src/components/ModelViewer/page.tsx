@@ -13,23 +13,6 @@ interface ModelViewerProps {
     modelUrl: string;
 }
 
-async function getData(file: string) {
-    try {
-        const url = `${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file}`
-        const res = await fetch(url);
-
-        if (!res.ok) {
-            return null;
-        }
-
-        return res.json()
-    } catch (error) {
-        // console.error("Error:", error)
-        return null;
-    }
-
-}
-
 const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const router = useRouter();
     const renderer = useRef<THREE.WebGLRenderer>();
@@ -45,12 +28,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     });
 
     useEffect(() => {
-      console.log(modelUrl)
-        const fetchData = async () => {
-            const data = await getData(modelUrl);
-            setFile(data);
-        }
-        fetchData();
 
         // initialize renderer
         renderer.current = new THREE.WebGLRenderer();
@@ -148,7 +125,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         const textureLoader = new THREE.TextureLoader();
 
         // load OBJ file
-        loader.load(file.downloadURL, (loadedObject: THREE.Object3D) => {
+        console.log("ssssss")
+        console.log(modelUrl)
+        loader.load(modelUrl, (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
 

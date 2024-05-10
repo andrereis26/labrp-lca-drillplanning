@@ -1,50 +1,52 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import ModelViewer from "@/components/ModelViewer/page";
 import config from "@/config/config";
 import { File } from "@/models/File";
-import { redirect } from 'next/navigation'
-import { useEffect, useState } from "react";
+import { useRouter } from 'next/navigation'
 
-// get model URL from server side
-async function getData(file: string) {
+async function fetchData(file: string) {
     try {
-        const url = `${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file}`
+        const url = `${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file}`;
         const res = await fetch(url);
 
         if (!res.ok) {
             return null;
         }
 
-        return res.json()
+        return res.json();
     } catch (error) {
-        // console.error("Error:", error)
+        console.error("Error fetching data:", error);
         return null;
     }
-
 }
 
 const ModelViewerPage = ({ params }: { params: { file: string } }) => {
-    const [file, setFile] = useState<File>({
-        name: "",
-        downloadURL: ""
-    });
+    const [file, setFile] = useState<File | null>(null);
+    const router = useRouter();
 
-    // get model URL from server side
     useEffect(() => {
-        const fetchData = async () => {
-            const data = await getData(params.file);
-            setFile(data);
-        }
-        fetchData();
-    }, [params.file])
-
+        const loadData = async () => {
+            const data = await fetchData(params.file);
+            if (!data) {
+                router.push(config.pageRoutes.home);
+                return;
+            }
+            setFile(data.file);
+        };
+        loadData();
+    }, [params.file]);
 
     return (
         <div>
-            <ModelViewer modelUrl={params.file} />
+            {file ? (
+                <ModelViewer modelUrl={file.downloadURL} />
+            ) : (
+                <p>Loading...</p>
+            )}
         </div>
     );
-}
+};
 
 export default ModelViewerPage;
