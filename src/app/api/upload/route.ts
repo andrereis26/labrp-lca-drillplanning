@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from 'fs';
-import { Readable, pipeline } from 'stream';
-import { promisify } from 'util';
-const pump = promisify(pipeline);
 import { v4 as uuidv4 } from "uuid";
 import config from "@/config/config";
 import { storage } from "@/lib/firebaseAdmin";
@@ -33,8 +29,9 @@ export async function POST(req: NextRequest) {
     let arrayBuffer = await file.arrayBuffer();
     let buffer = Buffer.from(arrayBuffer);
 
-    // create a new file name
-    const fileName = `${uuidv4()}.obj`;
+    // create a new file name with the original name and a unique identifier
+    // remove the .obj extension and add it to the end
+    const fileName = `${file.name.split('.').slice(0, -1).join('.')}-${uuidv4()}.obj`;
 
     // // create a new file path
     // const filePath = `${config.uploads.folderToUpload}${fileName}`;
@@ -46,6 +43,9 @@ export async function POST(req: NextRequest) {
     const fileStream = storage.bucket().file(fileName).createWriteStream();
     fileStream.write(buffer);
     fileStream.end();
+
+    // add small delay to allow file to be uploaded
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // generate download URL with very distant future expiration time
     const downloadURL = await storage.bucket().file(fileName).getSignedUrl({
