@@ -3,6 +3,7 @@ import axios, { AxiosProgressEvent } from 'axios';
 import config from '@/config/config';
 
 import { FaFileUpload } from "react-icons/fa";
+import { notify } from  "@/components/Notification/page";
 
 interface FileUploaderProps {
     onFileUpload: () => void;
@@ -52,6 +53,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
             });
 
             if (response.status === 200) {
+                notify.success('File uploaded successfully');
+                notify.info('File might take a few seconds to process. Refresh the table.');
+                
                 onFileUpload();
             }
 
@@ -59,6 +63,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
         } catch (error) {
             console.error('Error uploading file:', error);
             setUploading(false);
+            notify.error('Error uploading file');
         }
     };
 

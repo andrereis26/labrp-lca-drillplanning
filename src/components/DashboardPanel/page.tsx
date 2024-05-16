@@ -6,6 +6,8 @@ import { useState, useEffect, use } from 'react';
 import FileTable from './FilesTable/page';
 import useSWR from 'swr';
 
+import { notify } from  "@/components/Notification/page";
+
 // fetcher function for SWR
 const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => res.json());
 
@@ -34,6 +36,8 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
         });
 
         if (response.status === 200) {
+            notify.success('File(s) deleted successfully');
+
             mutate();   // revalidate data after deletion
 
             // update files state

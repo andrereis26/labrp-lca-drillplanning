@@ -5,12 +5,16 @@ import * as THREE from "three";
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
 import config from "@/config/config";
 import { useRouter } from 'next/navigation'
+import axios from "axios";
 import { File } from "@/models/File";
 import { RxCross2 } from "react-icons/rx";
 import { FaHighlighter } from "react-icons/fa";
-import axios from "axios";
+
+// notification component
+import { notify } from  "@/components/Notification/page";
 
 interface ModelViewerProps {
     file: File;
@@ -280,12 +284,17 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
     // load object
     const loadObject = (scene: THREE.Scene) => {
+         
+        notify.info(`Loading 3D model`);
+         
         // load model
         const loader = new OBJLoader();
         const textureLoader = new THREE.TextureLoader();
 
         // load OBJ file
         loader.load(file.downloadURL, (loadedObject: THREE.Object3D) => {
+
+            notify.clear();
 
             loadedObject.traverse((child) => {
 
@@ -479,9 +488,11 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                     });
 
                 if (response.status === 200) {
+                    notify.success('Drill zones updated successfully');
                 }
 
             } catch (error) {
+                notify.error('Error updating drill zones');
                 console.error('Error updating file drill zones:', error);
             }
 
