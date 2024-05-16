@@ -88,9 +88,12 @@ const getFile = async (name: string): Promise<File | null> => {
         expires: config.firebase.expirationTime
     });
 
+    // parse drillZones from metadata
+    let drillZones =  file[0].metadata.metadata?.drillZones ? JSON.parse(String(file[0].metadata.metadata.drillZones)) : [];
+    
     return {
         name: file[0].name,
         downloadURL: downloadURL[0],
-        // drillZones: file[0].metadata.metadata?.drillZones ? JSON.parse(file[0].metadata.metadata.drillZones) : []
+        drillZones: drillZones
     };
 }

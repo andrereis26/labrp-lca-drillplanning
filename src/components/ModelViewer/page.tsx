@@ -273,7 +273,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
         // reset camera position
         const resetCameraPosition = () => {
-            camera.current.position.set(0, 0, 150);
+            camera.current.position.set(-218.2646848982529, 1483.5522302035865, 1588.6274986528704);
             camera.current.lookAt(0, 0, 0);
         };
     }
@@ -305,6 +305,18 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             // Add model to scene
             scene.add(loadedObject);
             object.current = loadedObject;
+
+            // add drill zones to the object if there are any
+            if (file.drillZones) {
+                file.drillZones.forEach(zone => {
+                    const sphereGeometry = new THREE.SphereGeometry(zone.radius);
+                    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });    // red color
+                    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                    sphere.position.set(zone.x, zone.y, zone.z);
+                    object.current.add(sphere);
+                    setDrillZones(prevDrillZones => [sphere, ...prevDrillZones]);
+                });
+            }
         },
             (xhr) => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
             (error) => console.error('An error happened', error)
@@ -327,6 +339,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
     // manage drill zones (add and remove spheres on object)
     const handleDrillZones = () => {
         let spheres = [] as THREE.Object3D[];  // i have to use an auxiliary array to store the spheres because the state is not updated immediately (smth like async state update)
+        spheres = [...drillZones];
 
         // add mouse click event on object
         const raycaster = new THREE.Raycaster();
@@ -515,18 +528,16 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                                 </li>
                             ))}
                             <hr className="border-gray-600" />
-                            <li className="flex items-center justify-center pt-4">
-                                <button
-                                    className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
-                                    onClick={handleSubmitDrillZones}
-                                >
-                                    Submit
-                                </button>
-                            </li>
                         </>
                     )}
-
-
+                    <li className="flex items-center justify-center pt-4">
+                        <button
+                            className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
+                            onClick={handleSubmitDrillZones}
+                        >
+                            Submit
+                        </button>
+                    </li>
 
                 </ul>
             </div>
