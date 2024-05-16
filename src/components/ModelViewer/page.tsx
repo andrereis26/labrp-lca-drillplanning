@@ -25,7 +25,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const camera = useRef<THREE.PerspectiveCamera>(new THREE.PerspectiveCamera(75, 0, 0.1, 5000));
     const [drillZones, setDrillZones] = useState<THREE.Object3D[]>([]);
     const [highlightedZone, setHighlightedZone] = useState<THREE.Object3D | null>(null);
-    const drillRadius = useRef<number>(1); 
+    const drillRadius = useRef<number>(1);
+
+    const isInitialized = useRef(false);    // check if the component is initialized - to avoid reinitialization in dev mode
 
     // const [controlMode, setControlMode] = useState<'camera' | 'object'>('camera');
     const [file, setFile] = useState<File>({
@@ -33,7 +35,11 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         downloadURL: ""
     });
 
+    // initialize everything
     useEffect(() => {
+
+        // this is to avoid reinitialization in dev mode
+        if (isInitialized.current) return;
 
         // initialize renderer
         renderer.current = new THREE.WebGLRenderer();
@@ -80,13 +86,16 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
 
         animate();
 
+        isInitialized.current = true;
+
         // cleanup on unmount
         return () => {
-            gui.current?.destroy();
+            // gui.current?.destroy();
             renderer.current?.dispose();
         };
     }, [modelUrl]);
 
+    // handle window resize
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -151,15 +160,15 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     //     }
     // }, [controlMode]);
 
+    useEffect(() => {
+        return () => {
+            // gui.current?.destroy();
+        }
+    }, []);
+
     // handle exit button
     const handleExit = () => {
-        // clear model from localStorage
-        localStorage.removeItem(config.localStorage.modelUrl);
-
-        // delete file 
-        // const response = axios.delete(config.apiRoutes.routes.delete, {
-        //     data: { modelName: modelUrl }
-        // });
+        gui.current?.destroy();
 
         // redirect to dashboard
         router.push(config.pageRoutes.home);
@@ -361,7 +370,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
                 const point = intersection.point;
 
                 // add a sphere at the intersection point
-                const sphereGeometry = new THREE.SphereGeometry(drillRadius.current); 
+                const sphereGeometry = new THREE.SphereGeometry(drillRadius.current);
                 const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });    // red color
                 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
                 const localPoint = object.current.worldToLocal(point.clone());  // convert world point to local point
@@ -408,6 +417,29 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         setDrillZones(prevDrillZones => prevDrillZones.filter(z => z !== zone));
     }
 
+    // focus on zone when selected from the list
+    const focusOnZone = (zone: THREE.Object3D) => {
+        const box = new THREE.Box3().setFromObject(zone);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.current.fov * (Math.PI / 180);
+        let cameraZ = Math.abs((maxDim / 4) * Math.tan(fov * 2));
+
+        camera.current.position.set(center.x, center.y, center.z + cameraZ);
+        camera.current.lookAt(center);
+    }
+
+    // clear all drill zones
+    const handleClearAllZones = () => {
+        drillZones.forEach(zone => object.current.remove(zone));
+        setDrillZones([]);
+    }
+
+    // submit drill zones
+    const handleSubmitDrillZones = () => {
+        // send drill zones to the server
+    }
 
     return (
         <div ref={containerRef} >
@@ -420,22 +452,48 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
             </button>
 
             {/* small UI list in the bottom left corner */}
-            <div className="absolute bottom-0 left-0 m-4 p-2 bg-gray-800 text-white rounded">
-                <ul>
+            <div className="absolute bottom-0 left-0 m-4 p-2 bg-white dark:bg-gray-900 text-white rounded">
+                <ul className="cursor-pointer">
                     {/* if drill zones empty show message */}
                     {drillZones.length === 0 && <li>No drill zones</li>}
 
-                    {drillZones.map((zone, index) => (
-                        <li key={index}>
-                            Drill Zone {index + 1}
-                            <FaHighlighter className="inline-block ml-2 cursor-pointer" color="yellow"
-                                onClick={() => handleHighlightZone(zone)}
-                            />
-                            <RxCross2 className="inline-block ml-2 cursor-pointer" color="red" onClick={
-                                () => handleDeleteZone(zone)
-                            } />
-                        </li>
-                    ))}
+                    {drillZones.length > 0 && (
+                        <>
+                            <li className="flex items-center justify-center pb-4">
+                                <button
+                                    className="bg-red-700 hover:bg-red-800 text-white rounded p-1"
+                                    onClick={handleClearAllZones}
+                                >
+                                    Clear All
+                                </button>
+                            </li>
+                            <hr className="border-gray-600 pb-1" />
+                            {drillZones.map((zone, index) => (
+                                <li key={index} className="pb-1 bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <span onClick={() => {
+                                        focusOnZone(zone)
+                                    }}>Drill Zone {index + 1}</span>
+                                    <FaHighlighter className="inline-block ml-2 cursor-pointer" color="yellow"
+                                        onClick={() => handleHighlightZone(zone)}
+                                    />
+                                    <RxCross2 className="inline-block ml-2 cursor-pointer" color="red" onClick={
+                                        () => handleDeleteZone(zone)
+                                    } />
+                                </li>
+                            ))}
+                            <hr className="border-gray-600" />
+                            <li className="flex items-center justify-center pt-4">
+                                <button
+                                    className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
+                                    onClick={handleClearAllZones}
+                                >
+                                    Submit
+                                </button>
+                            </li>
+                        </>
+                    )}
+
+
 
                 </ul>
             </div>
