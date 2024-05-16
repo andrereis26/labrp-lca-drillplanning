@@ -42,7 +42,7 @@ const ModelViewerPage = ({ params }: { params: { file: string } }) => {
     return (
         <div>
             {file ? (
-                <ModelViewer modelUrl={file.downloadURL} />
+                <ModelViewer file={file} />
             ) : (
                 <p>Loading...</p>
             )}

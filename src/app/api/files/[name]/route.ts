@@ -7,9 +7,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 interface FileParams {
     params: {
-      name: string;
+        name: string;
     };
-  }
+}
 
 // get file by its name
 export async function GET(_: NextRequest, { params: { name } }: FileParams) {
@@ -39,6 +39,42 @@ export async function GET(_: NextRequest, { params: { name } }: FileParams) {
     }
 }
 
+// update file by its name
+export async function PUT(req: NextRequest, { params: { name } }: FileParams) {
+    try {
+        const { drillZones } = await req.json();
+        const file = await getFile(name);
+
+        if (!file) {
+            return NextResponse.json(
+                { message: "File not found" },
+                { status: 404 }
+            );
+        }
+
+        // update file
+        await storage.bucket().file(file.name).setMetadata({
+            metadata: {
+                drillZones: JSON.stringify(drillZones)
+            }
+        });
+
+        return NextResponse.json({
+            file: file
+        },
+            { status: 200 }
+        );
+
+    } catch (error) {
+        console.error("Error:", error);
+        return NextResponse.json(
+            { message: "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}
+
+
 // get file by its name
 const getFile = async (name: string): Promise<File | null> => {
     const [file] = await storage.bucket().getFiles({ prefix: name });
@@ -54,6 +90,7 @@ const getFile = async (name: string): Promise<File | null> => {
 
     return {
         name: file[0].name,
-        downloadURL: downloadURL[0]
+        downloadURL: downloadURL[0],
+        // drillZones: file[0].metadata.metadata?.drillZones ? JSON.parse(file[0].metadata.metadata.drillZones) : []
     };
 }

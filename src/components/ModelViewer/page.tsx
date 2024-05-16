@@ -10,12 +10,13 @@ import { useRouter } from 'next/navigation'
 import { File } from "@/models/File";
 import { RxCross2 } from "react-icons/rx";
 import { FaHighlighter } from "react-icons/fa";
+import axios from "axios";
 
 interface ModelViewerProps {
-    modelUrl: string;
+    file: File;
 }
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
+const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
     const router = useRouter();
     const renderer = useRef<THREE.WebGLRenderer>();
     const gui = useRef<GUI>();
@@ -30,10 +31,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const isInitialized = useRef(false);    // check if the component is initialized - to avoid reinitialization in dev mode
 
     // const [controlMode, setControlMode] = useState<'camera' | 'object'>('camera');
-    const [file, setFile] = useState<File>({
-        name: "",
-        downloadURL: ""
-    });
 
     // initialize everything
     useEffect(() => {
@@ -48,7 +45,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         const scene = new THREE.Scene();
 
         // check if there's a modelName
-        if (!modelUrl) return;
+        if (!file) return;
 
 
         if (!containerRef.current) return;
@@ -93,7 +90,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
             // gui.current?.destroy();
             renderer.current?.dispose();
         };
-    }, [modelUrl]);
+    }, [file]);
 
     // handle window resize
     useEffect(() => {
@@ -114,7 +111,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, [modelUrl]);
+    }, [file]);
 
     // handle mouse move event to rotate object
     // const handleMouseMove = (event: MouseEvent) => {
@@ -288,9 +285,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         const textureLoader = new THREE.TextureLoader();
 
         // load OBJ file
-        console.log("ssssss")
-        console.log(modelUrl)
-        loader.load(modelUrl, (loadedObject: THREE.Object3D) => {
+        loader.load(file.downloadURL, (loadedObject: THREE.Object3D) => {
 
             loadedObject.traverse((child) => {
 
@@ -439,7 +434,45 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     // submit drill zones
     const handleSubmitDrillZones = () => {
         // send drill zones to the server
+
+        // get position of the drill zones and parse it x, y, z
+        // console.log(drillZones);
+        const drillZonesPositions = drillZones.map(zone => {
+            const position = zone.position; // local position
+            const shpere = (zone as THREE.Mesh).geometry as THREE.SphereGeometry;   // get sphere geometry
+            const radius = shpere.parameters.radius;    // get sphere radius
+
+            return {
+                x: position.x,
+                y: position.y,
+                z: position.z,
+                radius: radius
+            };
+        });
+
+        // handle file update
+        const handleSubmitToServer = async (drillZonesPositions: { x: number, y: number, z: number, radius: number }[]) => {
+            // send updated file to the server
+            try {
+                const response = await axios.put(`${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file.name}`,
+                    {
+                        drillZones: drillZonesPositions
+                    });
+
+                if (response.status === 200) {
+                }
+
+            } catch (error) {
+                console.error('Error updating file drill zones:', error);
+            }
+
+        }
+
+        // update file with drill zones
+        handleSubmitToServer(drillZonesPositions);
     }
+
+
 
     return (
         <div ref={containerRef} >
@@ -485,7 +518,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
                             <li className="flex items-center justify-center pt-4">
                                 <button
                                     className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
-                                    onClick={handleClearAllZones}
+                                    onClick={handleSubmitDrillZones}
                                 >
                                     Submit
                                 </button>
