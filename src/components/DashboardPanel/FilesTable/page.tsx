@@ -10,9 +10,10 @@ interface FileTableProps {
     setSelectedFiles: React.Dispatch<React.SetStateAction<string[]>>;
     getFiles: () => void;
     deleteFiles: () => void;
+    isLoading: boolean;
 }
 
-const FileTable: React.FC<FileTableProps> = ({ files, selectedFiles, setSelectedFiles, getFiles, deleteFiles }) => {
+const FileTable: React.FC<FileTableProps> = ({ files, selectedFiles, setSelectedFiles, getFiles, deleteFiles, isLoading }) => {
     const router = useRouter();
 
     // select a single row
@@ -75,7 +76,7 @@ const FileTable: React.FC<FileTableProps> = ({ files, selectedFiles, setSelected
                                     <input
                                         type="checkbox"
                                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                        checked={selectedFiles.length === files.length}
+                                        checked={selectedFiles.length === files?.length}
                                         onChange={handleSelectAll}
                                     />
                                     <label className="sr-only">checkbox</label>
@@ -90,6 +91,8 @@ const FileTable: React.FC<FileTableProps> = ({ files, selectedFiles, setSelected
                         </tr>
                     </thead>
                     <tbody>
+                        {isLoading && <tr><td colSpan={3} className="text-center py-4">Loading...</td></tr>}
+                        {files.length === 0 && !isLoading && <tr><td colSpan={3} className="cursor-pointer bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-center py-4">No files found</td></tr>}
                         {files?.map((file, index) => (
                             <tr className={
                                 selectedFiles.includes(file.name)

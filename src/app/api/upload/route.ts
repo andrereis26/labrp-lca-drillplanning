@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     fileStream.end();
 
     // add small delay to allow file to be uploaded
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // generate download URL with very distant future expiration time
     const downloadURL = await storage.bucket().file(fileName).getSignedUrl({

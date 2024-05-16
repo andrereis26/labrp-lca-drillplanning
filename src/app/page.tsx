@@ -11,6 +11,7 @@ export default function Home() {
   const handleFileUpload = () => {
     let newNum = fileUploaded + 1;
     setFileUploaded(newNum);
+
   };
 
   return (
@@ -22,7 +23,7 @@ export default function Home() {
       </div>
 
       {/* File uploader component */}
-      <div>
+      <div className="pt-12">
         <FileUploader  onFileUpload={handleFileUpload}/>
       </div>
     </div>

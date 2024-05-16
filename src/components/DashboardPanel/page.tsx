@@ -2,8 +2,12 @@
 
 import config from '@/config/config';
 import { File } from '@/models/File';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import FileTable from './FilesTable/page';
+import useSWR from 'swr';
+
+// fetcher function for SWR
+const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then((res) => res.json());
 
 interface DashboardPanelProps {
     fileUploaded: number;
@@ -13,20 +17,9 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
     const [files, setFiles] = useState<File[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
-    // get files from server
-    const getFiles = async () => {
-        try {
-            const response = await fetch(config.apiRoutes.routes.files);
-            if (response.status === 200) {
-                const data = await response.json();
-                setFiles(data.files);
-            }
-        } catch (error) {
-            // console.error("Error:", error);
-        }
-    }
+    const { data, error, isLoading, mutate } = useSWR(config.apiRoutes.routes.files, fetcher, { refreshInterval: 0 });
 
-    // TODO: handle delete selected files
+    // handle delete selected files
     const handleDelete = async () => {
         // check if any file is selected
         if (selectedFiles.length === 0) return;
@@ -36,21 +29,35 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ models: selectedFiles })
+            body: JSON.stringify({ models: selectedFiles }),
+            cache: 'no-store'
         });
 
         if (response.status === 200) {
-            const data = await response.json();
-            console.log(data.message);
+            mutate();   // revalidate data after deletion
+
             // update files state
             setFiles(files.filter(file => !selectedFiles.includes(file.name)));
         }
     };
 
-    //   TODO: use useSWR hook for this
+    // revalidate data when a new file is uploaded
     useEffect(() => {
-        getFiles();
+        if (fileUploaded) {
+            mutate();  // revalidate data when a new file is uploaded
+        }
     }, [fileUploaded]);
+
+    // update files state when data is fetched
+    useEffect(() => {
+        if (!data) return;
+        if (!data.files) return;
+
+        setFiles(data.files);
+    }, [data]);
+
+    if (error) return <div>Failed to load</div>;
+    if (!data) return <div>Loading...</div>;
 
     return (
         <div>
@@ -61,8 +68,9 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
                 <FileTable files={files}
                     selectedFiles={selectedFiles}
                     setSelectedFiles={setSelectedFiles}
-                    getFiles={getFiles}
+                    getFiles={mutate}
                     deleteFiles={handleDelete}
+                    isLoading={isLoading}
                 />
             </div>
 
