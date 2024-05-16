@@ -28,12 +28,15 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
 
     // TODO: handle delete selected files
     const handleDelete = async () => {
+        // check if any file is selected
+        if (selectedFiles.length === 0) return;
+
         const response = await fetch(config.apiRoutes.routes.delete, {
-            method: 'POST',
+            method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ files: selectedFiles })
+            body: JSON.stringify({ models: selectedFiles })
         });
 
         if (response.status === 200) {
@@ -59,6 +62,7 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
                     selectedFiles={selectedFiles}
                     setSelectedFiles={setSelectedFiles}
                     getFiles={getFiles}
+                    deleteFiles={handleDelete}
                 />
             </div>
 
