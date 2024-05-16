@@ -8,6 +8,8 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import config from "@/config/config";
 import { useRouter } from 'next/navigation'
 import { File } from "@/models/File";
+import { RxCross2 } from "react-icons/rx";
+import { FaHighlighter } from "react-icons/fa";
 
 interface ModelViewerProps {
     modelUrl: string;
@@ -21,6 +23,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
     const controls = useRef<OrbitControls | null>(null);
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
     const camera = useRef<THREE.PerspectiveCamera>(new THREE.PerspectiveCamera(75, 0, 0.1, 5000));
+    const [drillZones, setDrillZones] = useState<THREE.Object3D[]>([]);
+    const [highlightedZone, setHighlightedZone] = useState<THREE.Object3D | null>(null);
+    const drillRadius = useRef<number>(1); 
+
     // const [controlMode, setControlMode] = useState<'camera' | 'object'>('camera');
     const [file, setFile] = useState<File>({
         name: "",
@@ -62,8 +68,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         // initialize light
         iniLight(scene);
 
-        // add select drills zones selections
-        selectDrillZones();
+        // add drills zones handler
+        handleDrillZones();
 
         // animation loop
         const animate = () => {
@@ -246,6 +252,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         gridFolder.add(gridHelper, 'visible').name('Show Grid');
         gridFolder.add(axesHelper, 'visible').name('Show Axis');
 
+        // add drill radius control
+        const drillFolder = gui.current.addFolder('Drill Zone');
+        drillFolder.add({ radius: drillRadius.current }, 'radius', 0.1, 10).name('Drill Radius').onChange((value: number) => {
+            drillRadius.current = value;
+        });
+
 
         // reset object position and scale
         const resetObjectPositionAndScale = () => {
@@ -308,8 +320,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
 
     }
 
-    // add select drills zones selections
-    const selectDrillZones = () => {
+    // manage drill zones (add and remove spheres on object)
+    const handleDrillZones = () => {
+        let spheres = [] as THREE.Object3D[];  // i have to use an auxiliary array to store the spheres because the state is not updated immediately (smth like async state update)
 
         // add mouse click event on object
         const raycaster = new THREE.Raycaster();
@@ -332,17 +345,32 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
 
             // get the first intersection point
             if (intersects.length > 0) {
+
+                // if intersects with a sphere, remove it
+                const intersectedSphere = intersects.find(intersection => spheres.includes(intersection.object));
+                if (intersectedSphere) {
+                    object.current.remove(intersectedSphere.object);
+                    // remove sphere from spheres array and drillZones
+                    spheres.splice(spheres.indexOf(intersectedSphere.object), 1);
+                    setDrillZones(prevDrillZones => prevDrillZones.filter(zone => zone !== intersectedSphere.object));
+                    return;
+                }
+
+                // get the intersection point
                 const intersection = intersects[0];
                 const point = intersection.point;
-                console.log(point);
 
                 // add a sphere at the intersection point
-                const sphereGeometry = new THREE.SphereGeometry(2);
-                const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                const sphereGeometry = new THREE.SphereGeometry(drillRadius.current); 
+                const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });    // red color
                 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                const localPoint = object.current.worldToLocal(point.clone());
+                const localPoint = object.current.worldToLocal(point.clone());  // convert world point to local point
                 sphere.position.copy(localPoint);
                 object.current.add(sphere);
+
+                // add sphere to sphere array and drillZones
+                spheres.push(sphere);
+                setDrillZones(prevDrillZones => [sphere, ...prevDrillZones]);
 
             }
         };
@@ -355,6 +383,31 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
         };
     }
 
+    // highlight zone when selected from the list
+    const handleHighlightZone = (zone: THREE.Object3D) => {
+        // reset color of the previous highlighted zone
+        if (highlightedZone) {
+            highlightedZone.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                }
+            });
+        }
+
+        zone.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                child.material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            }
+        });
+        setHighlightedZone(zone);
+    }
+
+    // delete zone when selected from the list
+    const handleDeleteZone = (zone: THREE.Object3D) => {
+        object.current.remove(zone);
+        setDrillZones(prevDrillZones => prevDrillZones.filter(z => z !== zone));
+    }
+
 
     return (
         <div ref={containerRef} >
@@ -365,6 +418,27 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl }) => {
             >
                 Exit
             </button>
+
+            {/* small UI list in the bottom left corner */}
+            <div className="absolute bottom-0 left-0 m-4 p-2 bg-gray-800 text-white rounded">
+                <ul>
+                    {/* if drill zones empty show message */}
+                    {drillZones.length === 0 && <li>No drill zones</li>}
+
+                    {drillZones.map((zone, index) => (
+                        <li key={index}>
+                            Drill Zone {index + 1}
+                            <FaHighlighter className="inline-block ml-2 cursor-pointer" color="yellow"
+                                onClick={() => handleHighlightZone(zone)}
+                            />
+                            <RxCross2 className="inline-block ml-2 cursor-pointer" color="red" onClick={
+                                () => handleDeleteZone(zone)
+                            } />
+                        </li>
+                    ))}
+
+                </ul>
+            </div>
         </div>
     );
 };
