@@ -314,7 +314,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
                     sphere.position.set(zone.x, zone.y, zone.z);
                     object.current.add(sphere);
-                    setDrillZones(prevDrillZones => [sphere, ...prevDrillZones]);
+                    setDrillZones(prevDrillZones => [...prevDrillZones, sphere]);
                 });
             }
         },
@@ -387,7 +387,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
                 // add sphere to sphere array and drillZones
                 spheres.push(sphere);
-                setDrillZones(prevDrillZones => [sphere, ...prevDrillZones]);
+                setDrillZones(prevDrillZones => [...prevDrillZones, sphere]);
 
             }
         };
@@ -409,6 +409,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                     child.material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
                 }
             });
+
+            // check if the zone is the same as the previous one
+            if (highlightedZone === zone) {
+                setHighlightedZone(null);
+                return;
+            }
         }
 
         zone.traverse((child) => {
