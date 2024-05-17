@@ -91,7 +91,7 @@ const FileTable: React.FC<FileTableProps> = ({ files, selectedFiles, setSelected
                         </tr>
                     </thead>
                     <tbody>
-                        {isLoading && <tr><td colSpan={3} className="text-center py-4">Loading...</td></tr>}
+                        {isLoading && <tr><td colSpan={3} className="cursor-pointer bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-center py-4">Loading...</td></tr>}
                         {files.length === 0 && !isLoading && <tr><td colSpan={3} className="cursor-pointer bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-center py-4">No files found</td></tr>}
                         {files?.map((file, index) => (
                             <tr className={
