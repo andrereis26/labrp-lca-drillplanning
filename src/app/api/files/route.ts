@@ -11,14 +11,9 @@ async function getFiles(): Promise<File[]> {
     const filePromises = files.map(async file => {
         const downloadURL = await file.getSignedUrl({
             action: 'read',
-            expires: config.firebase.expirationTime,
-            extensionHeaders: {
-                'Content-Type': 'application/octet-stream',
-                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                'Pragma': 'no-cache',
-            }
+            expires: config.firebase.expirationTime
         });
-
+            console.log(downloadURL);
         return {
             name: file.name,
             downloadURL: downloadURL[0]
