@@ -13,10 +13,12 @@ async function getFiles(): Promise<File[]> {
             action: 'read',
             expires: config.firebase.expirationTime
         });
-            console.log(downloadURL);
+        // parse drillZones from metadata
+        let drillZones = file.metadata.metadata?.drillZones ? JSON.parse(String(file.metadata.metadata.drillZones)) : [];
         return {
             name: file.name,
-            downloadURL: downloadURL[0]
+            downloadURL: downloadURL[0],
+            drillZones
         };
     });
 
