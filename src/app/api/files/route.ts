@@ -25,6 +25,7 @@ async function getFiles(): Promise<File[]> {
     return Promise.all(filePromises);
 }
 
+export const dynamic = 'force-dynamic'   // enable dynamic routing
 export async function GET(req: NextRequest) {
     try {
         if (req.method === "GET") {
