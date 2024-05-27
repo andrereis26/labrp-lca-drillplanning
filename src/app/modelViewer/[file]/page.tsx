@@ -8,7 +8,10 @@ import { useRouter } from 'next/navigation'
 
 async function fetchData(file: string) {
     try {
+        console.log()
         const url = `${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file}`;
+        console.log("Fetching data from:", url)
+        console.log(url)
         const res = await fetch(url);
 
         if (!res.ok) {
