@@ -533,7 +533,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                             <hr className="border-gray-600 pb-1" />
                             {drillZones.map((zone, index) => (
                                 <li key={index} className="pb-1 bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                    <span onClick={() => {
+                                    <span className="text-black dark:text-white" onClick={() => {
                                         focusOnZone(zone)
                                     }}>Drill Zone {index + 1}</span>
                                     <FaHighlighter className="inline-block ml-2 cursor-pointer" color="yellow"
