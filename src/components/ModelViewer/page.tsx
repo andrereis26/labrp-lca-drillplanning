@@ -515,7 +515,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             </button>
 
             {/* small UI list in the bottom left corner */}
-            <div className="absolute bottom-0 left-0 m-4 p-2 bg-white dark:bg-gray-900 text-white rounded">
+            <div className="absolute bottom-0 left-0 m-4 p-2 bg-white dark:bg-gray-900 rounded">
                 <ul className="cursor-pointer">
                     {/* if drill zones empty show message */}
                     {drillZones.length === 0 && <li>No drill zones</li>}
