@@ -64,8 +64,6 @@ const DashboardPanel: React.FC<DashboardPanelProps> = ({ fileUploaded }) => {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-center my-8">Dashboard Panel</h1>
-
             {/* Files table */}
             <div className="flex justify-center">
                 <FileTable files={files}

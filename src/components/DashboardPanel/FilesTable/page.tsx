@@ -111,7 +111,7 @@ const FileTable: React.FC<FileTableProps> = ({ files, selectedFiles, setSelected
                                     </div>
                                 </td>
                                 <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white" onClick={() => handleVisualize(file)}>
-                                    {file.name}
+                                    {file.cleanName}
                                 </th>
                                 <td className="px-6 py-4">
                                     <span className="font-medium text-blue-600 dark:text-blue-500 hover:underline" rel="noopener noreferrer" onClick={() => handleVisualize(file)}>Visualize</span>

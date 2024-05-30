@@ -91,8 +91,12 @@ const getFile = async (name: string): Promise<File | null> => {
     // parse drillZones from metadata
     let drillZones =  file[0].metadata.metadata?.drillZones ? JSON.parse(String(file[0].metadata.metadata.drillZones)) : [];
     
+    // clean name, remove everything after the - character
+    let cleanName = file[0].name.split("-")[0];
+
     return {
         name: file[0].name,
+        cleanName: cleanName,
         downloadURL: downloadURL[0],
         drillZones: drillZones
     };

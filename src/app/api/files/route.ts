@@ -15,8 +15,14 @@ async function getFiles(): Promise<File[]> {
         });
         // parse drillZones from metadata
         let drillZones = file.metadata.metadata?.drillZones ? JSON.parse(String(file.metadata.metadata.drillZones)) : [];
+
+        // clean name, remove everything after the - character
+        // clean name, remove everything after the - character
+        let cleanName = file.name.split("-")[0];
+
         return {
             name: file.name,
+            cleanName: cleanName,
             downloadURL: downloadURL[0],
             drillZones
         };

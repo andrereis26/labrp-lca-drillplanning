@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import axios, { AxiosProgressEvent } from 'axios';
 import config from '@/config/config';
+import axios, { AxiosProgressEvent } from 'axios';
+import { useState } from 'react';
 
+import { notify } from "@/components/Notification/page";
 import { FaFileUpload } from "react-icons/fa";
-import { notify } from  "@/components/Notification/page";
 
 interface FileUploaderProps {
     onFileUpload: () => void;
@@ -55,7 +55,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
             if (response.status === 200) {
                 notify.success('File uploaded successfully');
                 notify.info('File might take a few seconds to process. Refresh the table.');
-                
+
                 onFileUpload();
             }
 
@@ -68,66 +68,60 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
     };
 
     return (
-        
-            <div
-                className="border-4 border-dashed border-gray-400 rounded-lg p-10"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-            >
+        <div
+            className="border-4 border-dashed border-gray-400 rounded-lg p-10 flex flex-col items-center justify-center"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+        >
+            {!uploading && (
+                <input
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept=".obj"
+                />
+            )}
 
-                {!uploading && (
-                    <input
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        accept=".obj"
-                    />)
-                }
-
-                <div className="text-center">
-                    <FaFileUpload className="mx-auto h-10 w-10 text-gray-400" />
-                    {!uploading ? (
-                        <>
-
-                            <p className="mt-3 text-sm text-gray-600">Drag and drop a file here</p>
-                            <p className="mt-1 text-xs text-gray-400">or</p>
-                            <label
-                                htmlFor="file-upload"
-                                className="cursor-pointer inline-block mt-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium border border-transparent hover:bg-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
-                            >
-                                Browse
-                            </label>
-                            <input
-                                id="file-upload"
-                                type="file"
-                                className="hidden"
-                                onChange={handleFileChange}
-                                accept=".obj"
-                            />
-                        </>
-                    ) : (
-                        <p className="mt-1 text-sm text-gray-600">Uploading...</p>
-                    )
-                    }
-                </div>
-                {/* file name */}
-                {selectedFile && (
-                    <div className="mt-4">
-                        <p className="text-sm font-medium text-gray-900">{uploading && selectedFile.name}</p>
-                    </div>
-                )}
-                {/* loading bar */}
-                {uploading && (
-                    <div className="mt-4 mb-2 w-full h-4 bg-blue-200 rounded-lg">
-                        <div
-                            className="h-full bg-blue-500 rounded-lg"
-                            style={{ width: `${progress}%` }}
-                        ></div>
-                    </div>
+            <div className="text-center">
+                <FaFileUpload className="mx-auto h-10 w-10 text-gray-400" />
+                {!uploading ? (
+                    <>
+                        <p className="mt-3 text-sm text-gray-600">Drag and drop a file here</p>
+                        <p className="mt-1 text-xs text-gray-400">or</p>
+                        <label
+                            htmlFor="file-upload"
+                            className="cursor-pointer inline-block mt-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium border border-transparent hover:bg-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+                        >
+                            Browse
+                        </label>
+                        <input
+                            id="file-upload"
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileChange}
+                            accept=".obj"
+                        />
+                    </>
+                ) : (
+                    <p className="mt-1 text-sm text-gray-600">Uploading...</p>
                 )}
             </div>
-   
+            {/* file name */}
+            {selectedFile && (
+                <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-900">{uploading && selectedFile.name}</p>
+                </div>
+            )}
+            {/* loading bar */}
+            {uploading && (
+                <div className="mt-4 mb-2 w-full h-4 bg-blue-200 rounded-lg">
+                    <div
+                        className="h-full bg-blue-500 rounded-lg"
+                        style={{ width: `${progress}%` }}
+                    ></div>
+                </div>
+            )}
+        </div>
     );
 };
-
 export default FileUploader;

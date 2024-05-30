@@ -1,13 +1,8 @@
 const config = {
-  cookies: {
-  },
-
   uploads: {
     models: {
       type: ["obj"],
-    },
-    folder: "/models/",
-    folderToUpload: "public/models/",
+    }
   },
 
   pageRoutes:{
@@ -22,10 +17,6 @@ const config = {
       delete: "api/delete",
       files: "api/files",
     },
-  },
-
-  localStorage: {
-    modelUrl: "@LabRP-LCA:model",
   },
 
   firebase: {
