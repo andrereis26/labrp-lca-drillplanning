@@ -14,7 +14,10 @@ import { RxCross2 } from "react-icons/rx";
 import { FaHighlighter } from "react-icons/fa";
 
 // notification component
-import { notify } from  "@/components/Notification/page";
+import { notify } from "@/components/Notification/page";
+import { DrillZone } from "@/models/DrillZone";
+import { Coords } from "@/models/Coords";
+import usePrevious from "@/lib/usePrevious";
 
 interface ModelViewerProps {
     file: File;
@@ -29,7 +32,15 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
     const object = useRef<THREE.Object3D>(new THREE.Object3D());
     const camera = useRef<THREE.PerspectiveCamera>(new THREE.PerspectiveCamera(75, 0, 0.1, 5000));
     const [drillZones, setDrillZones] = useState<THREE.Object3D[]>([]);
+
+    // drill form
+    const [highlightedRow, setHighlightedRow] = useState<number>(-1);
     const [highlightedZone, setHighlightedZone] = useState<THREE.Object3D | null>(null);
+    const prevHighlighted = usePrevious(highlightedZone);
+    const [radius, setRadius] = useState<number>(1);
+    const [height, setHeight] = useState<number>(15);
+    const [rotation, setRotation] = useState<Coords>({ x: 0, y: 0, z: 0 });
+    const [position, setPosition] = useState<Coords>({ x: 0, y: 0, z: 0 });
     const drillRadius = useRef<number>(1);
 
     const isInitialized = useRef(false);    // check if the component is initialized - to avoid reinitialization in dev mode
@@ -263,10 +274,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
         gridFolder.add(axesHelper, 'visible').name('Show Axis');
 
         // add drill radius control
-        const drillFolder = gui.current.addFolder('Drill Zone');
-        drillFolder.add({ radius: drillRadius.current }, 'radius', 0.1, 10).name('Drill Radius').onChange((value: number) => {
-            drillRadius.current = value;
-        });
+        // const drillFolder = gui.current.addFolder('Drill Zone');
+        // drillFolder.add({ radius: drillRadius.current }, 'radius', 0.1, 10).name('Drill Radius').onChange((value: number) => {
+        //     drillRadius.current = value;
+        // });
 
 
         // reset object position and scale
@@ -284,9 +295,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
     // load object
     const loadObject = (scene: THREE.Scene) => {
-         
+
         notify.info(`Loading 3D model`);
-         
+
         // load model
         const loader = new OBJLoader();
         const textureLoader = new THREE.TextureLoader();
@@ -318,12 +329,23 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             // add drill zones to the object if there are any
             if (file.drillZones) {
                 file.drillZones.forEach(zone => {
-                    const sphereGeometry = new THREE.SphereGeometry(zone.radius);
-                    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });    // red color
-                    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                    sphere.position.set(zone.x, zone.y, zone.z);
-                    object.current.add(sphere);
-                    setDrillZones(prevDrillZones => [...prevDrillZones, sphere]);
+
+                    // cylinder instead
+                    const geometry = new THREE.CylinderGeometry(
+                        zone.radius, // radiusTop
+                        zone.radius, // radiusBottom
+                        zone.height, // height
+                        32, // radialSegments
+                        1, // heightSegments
+                        false, // openEnded
+                    );
+                    const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });    // red color
+                    const cylinder = new THREE.Mesh(geometry, material);
+                    cylinder.position.set(zone.position.x, zone.position.y, zone.position.z);
+                    cylinder.rotation.set(zone.rotation.x, zone.rotation.y, zone.rotation.z);
+                    object.current.add(cylinder);
+
+                    setDrillZones(prevDrillZones => [...prevDrillZones, cylinder]);
                 });
             }
         },
@@ -345,10 +367,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
     }
 
-    // manage drill zones (add and remove spheres on object)
+    // manage drill zones (add and remove cylinder on object)
     const handleDrillZones = () => {
-        let spheres = [] as THREE.Object3D[];  // i have to use an auxiliary array to store the spheres because the state is not updated immediately (smth like async state update)
-        spheres = [...drillZones];
+        let cylinders = [] as THREE.Object3D[];  // i have to use an auxiliary array to store the cylinders because the state is not updated immediately (smth like async state update)
+        cylinders = [...drillZones];
 
         // add mouse click event on object
         const raycaster = new THREE.Raycaster();
@@ -372,13 +394,13 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             // get the first intersection point
             if (intersects.length > 0) {
 
-                // if intersects with a sphere, remove it
-                const intersectedSphere = intersects.find(intersection => spheres.includes(intersection.object));
-                if (intersectedSphere) {
-                    object.current.remove(intersectedSphere.object);
-                    // remove sphere from spheres array and drillZones
-                    spheres.splice(spheres.indexOf(intersectedSphere.object), 1);
-                    setDrillZones(prevDrillZones => prevDrillZones.filter(zone => zone !== intersectedSphere.object));
+                // if intersects with a cylinder, remove it
+                const intersectedCylinder = intersects.find(intersection => cylinders.includes(intersection.object));
+                if (intersectedCylinder) {
+                    object.current.remove(intersectedCylinder.object);
+                    // remove cylinder from cylinders array and drillZones
+                    cylinders.splice(cylinders.indexOf(intersectedCylinder.object), 1);
+                    setDrillZones(prevDrillZones => prevDrillZones.filter(zone => zone !== intersectedCylinder.object));
                     return;
                 }
 
@@ -386,17 +408,27 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                 const intersection = intersects[0];
                 const point = intersection.point;
 
-                // add a sphere at the intersection point
-                const sphereGeometry = new THREE.SphereGeometry(drillRadius.current);
-                const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });    // red color
-                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                const localPoint = object.current.worldToLocal(point.clone());  // convert world point to local point
-                sphere.position.copy(localPoint);
-                object.current.add(sphere);
+                // add a cylinder at the intersection point
+                const geometry = new THREE.CylinderGeometry(
+                    drillRadius.current, // radiusTop
+                    drillRadius.current, // radiusBottom
+                    15, // height
+                    32, // radialSegments
+                    1, // heightSegments
+                    false, // openEnded
+                );
 
-                // add sphere to sphere array and drillZones
-                spheres.push(sphere);
-                setDrillZones(prevDrillZones => [...prevDrillZones, sphere]);
+                const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });    // red color
+                const cylinder = new THREE.Mesh(geometry, material);
+                const localPoint = object.current.worldToLocal(point.clone());  // convert world point to local point
+                cylinder.position.copy(localPoint);
+                object.current.add(cylinder);
+                setHighlightedZone(cylinder);   // highlight the new cylinder so the user can update its params
+                handleHighlightZone(cylinder);   // highlight the new cylinder so the user can update its params
+                // setHighlightedRow(cylinders.length);   // highlight the new cylinder in the list
+
+                cylinders.push(cylinder);
+                setDrillZones(prevDrillZones => [...prevDrillZones, cylinder]);
 
             }
         };
@@ -408,6 +440,46 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             window.removeEventListener('click', onClick);
         };
     }
+
+    // highlight useEffect to change the highlighted zone 
+    useEffect(() => {
+        if (prevHighlighted !== undefined && prevHighlighted !== highlightedZone) {
+            // reset color of the previous highlighted zone
+            prevHighlighted?.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                }
+            });
+
+            if (!highlightedZone) return;
+
+            // highlight the new zone
+            highlightedZone.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                }
+            });
+
+            // set the position and rotation of the highlighted zone
+            setPosition({
+                x: highlightedZone.position.x,
+                y: highlightedZone.position.y,
+                z: highlightedZone.position.z
+            });
+
+            setRotation({
+                x: highlightedZone.rotation.x,
+                y: highlightedZone.rotation.y,
+                z: highlightedZone.rotation.z
+            });
+
+            // get the radius and height of the highlighted zone
+            const h = ((highlightedZone as THREE.Mesh).geometry as THREE.CylinderGeometry)
+            setRadius(h.parameters.radiusTop);
+            setHeight(h.parameters.height);
+        }
+
+    }, [highlightedZone, prevHighlighted]);
 
     // highlight zone when selected from the list
     const handleHighlightZone = (zone: THREE.Object3D) => {
@@ -426,18 +498,20 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             }
         }
 
-        zone.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                child.material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            }
-        });
         setHighlightedZone(zone);
+        setHighlightedRow(drillZones.findIndex(z => z === zone));
     }
 
     // delete zone when selected from the list
     const handleDeleteZone = (zone: THREE.Object3D) => {
+        // check if the zone is the highlighted one
+        if (highlightedZone === zone) {
+            setHighlightedZone(null);
+        }
+
         object.current.remove(zone);
         setDrillZones(prevDrillZones => prevDrillZones.filter(z => z !== zone));
+        setHighlightedRow(-1);
     }
 
     // focus on zone when selected from the list
@@ -455,8 +529,10 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
     // clear all drill zones
     const handleClearAllZones = () => {
+        setHighlightedZone(null);
         drillZones.forEach(zone => object.current.remove(zone));
         setDrillZones([]);
+        setHighlightedRow(-1);
     }
 
     // submit drill zones
@@ -467,19 +543,28 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
         // console.log(drillZones);
         const drillZonesPositions = drillZones.map(zone => {
             const position = zone.position; // local position
-            const shpere = (zone as THREE.Mesh).geometry as THREE.SphereGeometry;   // get sphere geometry
-            const radius = shpere.parameters.radius;    // get sphere radius
+            const cylinder = (zone as THREE.Mesh).geometry as THREE.CylinderGeometry;   // get cylinder geometry
+            const radius = cylinder.parameters.radiusTop;    // get cylinder radius
+            const height = cylinder.parameters.height;    // get cylinder height
 
             return {
-                x: position.x,
-                y: position.y,
-                z: position.z,
+                position: {
+                    x: position.x,
+                    y: position.y,
+                    z: position.z
+                },
+                rotation: {
+                    x: zone.rotation.x,
+                    y: zone.rotation.y,
+                    z: zone.rotation.z
+                },
+                height: height,
                 radius: radius
             };
         });
 
         // handle file update
-        const handleSubmitToServer = async (drillZonesPositions: { x: number, y: number, z: number, radius: number }[]) => {
+        const handleSubmitToServer = async (drillZonesPositions: DrillZone[]) => {
             // send updated file to the server
             try {
                 const response = await axios.put(`${config.apiRoutes.base}${config.apiRoutes.routes.files}/${file.name}`,
@@ -502,6 +587,41 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
         handleSubmitToServer(drillZonesPositions);
     }
 
+    // update drill zone
+    const handleUpdateDrillZone = (zone: THREE.Object3D) => {
+
+        // update zone
+        const newGeometry = new THREE.CylinderGeometry(
+            radius, // radiusTop
+            radius, // radiusBottom
+            height, // height
+            32, // radialSegments
+            1, // heightSegments
+            false, // openEnded
+        );
+        const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const newCylinder = new THREE.Mesh(newGeometry, material);
+
+        newCylinder.position.set(position.x, position.y, position.z);
+        newCylinder.rotation.set(rotation.x, rotation.y, rotation.z);
+
+        // get zone index
+        const index = drillZones.findIndex(z => z === zone);
+
+        // delete the old zone
+        handleDeleteZone(zone);
+
+        // update the zone in the array
+        const updatedArray = [...drillZones];
+        updatedArray[index] = newCylinder;
+        setDrillZones(updatedArray);
+
+        // highlight the updated zone
+        setHighlightedZone(newCylinder);
+
+        // add the updated zone
+        object.current.add(newCylinder);
+    }
 
 
     return (
@@ -514,50 +634,180 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                 Exit
             </button>
 
-            {/* small UI list in the bottom left corner */}
-            <div className="absolute bottom-0 left-0 m-4 p-2 bg-white dark:bg-gray-900 rounded">
-                <ul className="cursor-pointer">
-                    {/* if drill zones empty show message */}
-                    {drillZones.length === 0 && <li>No drill zones</li>}
+            <div className="absolute bottom-0 left-0 m-4">
 
-                    {drillZones.length > 0 && (
-                        <>
-                            <li className="flex items-center justify-center pb-4">
+                {/* small UI to change the params of the selected cylinder  */}
+                {highlightedZone && (
+                    <div className="p-2 bg-white dark:bg-gray-900 rounded mb-2">
+                        <ul className="cursor-pointer">
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Selected Cylinder</span>
+                            </li>
+                            {/* radius */}
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Radius: </span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.scale.x}
+                                    value={radius}
+                                    onChange={(e) => setRadius(parseFloat(e.target.value))}
+                                    placeholder="Radius"
+                                    className="border rounded p-1"
+                                />
+                            </li>
+                            {/* height */}
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Height: </span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.scale.y}
+                                    value={height}
+                                    onChange={(e) => setHeight(parseFloat(e.target.value))}
+                                    placeholder="Height"
+                                    className="border rounded p-1"
+                                />
+                            </li>z
+                            <hr className="border-gray-600" />
+                            {/* position */}
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Position</span>
+                            </li>
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">X:</span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.position.x}
+                                    value={position.x}
+                                    onChange={(e) => setPosition({ ...position, x: parseFloat(e.target.value) })}
+                                    placeholder="Position X"
+                                    className="border rounded p-1"
+                                    step="0.000001"
+                                />
+                            </li>
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Y:</span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.position.y}
+                                    value={position.y}
+                                    onChange={(e) => setPosition({ ...position, y: parseFloat(e.target.value) })}
+                                    placeholder="Position Y"
+                                    className="border rounded p-1"
+                                    step="0.000001"
+                                />
+                            </li>
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Z:</span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.position.z}
+                                    value={position.z}
+                                    onChange={(e) => setPosition({ ...position, z: parseFloat(e.target.value) })}
+                                    placeholder="Position Z"
+                                    className="border rounded p-1"
+                                    step="0.000001"
+                                />
+                            </li>
+                            {/* rotation */}
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Rotation</span>
+                            </li>
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">X:</span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.rotation.x}
+                                    value={rotation.x}
+                                    onChange={(e) => setRotation({ ...rotation, x: parseFloat(e.target.value) })}
+                                    placeholder="Rotation X"
+                                    className="border rounded p-1"
+                                    step="0.000001"
+                                />
+                            </li>
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Y:</span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.rotation.y}
+                                    value={rotation.y}
+                                    onChange={(e) => setRotation({ ...rotation, y: parseFloat(e.target.value) })}
+                                    placeholder="Rotation Y"
+                                    className="border rounded p-1"
+                                    step="0.000001"
+                                />
+                            </li>
+                            <li className="pb-1">
+                                <span className="text-black dark:text-white">Z:</span>
+                                <input
+                                    type="number"
+                                    defaultValue={highlightedZone.rotation.z}
+                                    value={rotation.z}
+                                    onChange={(e) => setRotation({ ...rotation, z: parseFloat(e.target.value) })}
+                                    placeholder="Rotation Z"
+                                    className="border rounded p-1"
+                                    step="0.000001"
+                                />
+                            </li>
+                            <hr className="border-gray-600" />
+                            <li className="flex items-center justify-center pt-4">
                                 <button
-                                    className="bg-red-700 hover:bg-red-800 text-white rounded p-1"
-                                    onClick={handleClearAllZones}
+                                    className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
+                                    onClick={() => handleUpdateDrillZone(highlightedZone)}
                                 >
-                                    Clear All
+                                    Update
                                 </button>
                             </li>
-                            <hr className="border-gray-600 pb-1" />
-                            {drillZones.map((zone, index) => (
-                                <li key={index} className="pb-1 bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                    <span className="text-black dark:text-white" onClick={() => {
-                                        focusOnZone(zone)
-                                    }}>Drill Zone {index + 1}</span>
-                                    <FaHighlighter className="inline-block ml-2 cursor-pointer" color="yellow"
-                                        onClick={() => handleHighlightZone(zone)}
-                                    />
-                                    <RxCross2 className="inline-block ml-2 cursor-pointer" color="red" onClick={
-                                        () => handleDeleteZone(zone)
-                                    } />
-                                </li>
-                            ))}
-                            <hr className="border-gray-600" />
-                        </>
-                    )}
-                    <li className="flex items-center justify-center pt-4">
-                        <button
-                            className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
-                            onClick={handleSubmitDrillZones}
-                        >
-                            Submit
-                        </button>
-                    </li>
+                        </ul>
+                    </div>
+                )}
+                {/* small UI list in the bottom left corner */}
+                <div className="p-2 bg-white dark:bg-gray-900 rounded">
+                    <ul className="cursor-pointer">
+                        {/* if drill zones empty show message */}
+                        {drillZones.length === 0 && <li>No drill zones</li>}
 
-                </ul>
+                        {drillZones.length > 0 && (
+                            <>
+                                <li className="flex items-center justify-center pb-4">
+                                    <button
+                                        className="bg-red-700 hover:bg-red-800 text-white rounded p-1"
+                                        onClick={handleClearAllZones}
+                                    >
+                                        Clear All
+                                    </button>
+                                </li>
+                                <hr className="border-gray-600 pb-1" />
+                                {drillZones.map((zone, index) => (
+                                    <li key={index} className={`pb-1 border-b ${highlightedRow === index ? 'bg-gray-300 dark:bg-gray-600' : ''}`}>
+                                         <li key={index} className="pb-1 bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 "></li>
+                                        <span className="text-black dark:text-white" onClick={() => {
+                                            handleHighlightZone(zone)
+                                        }}>Drill Zone {index + 1}</span>
+                                        <FaHighlighter className="inline-block ml-2 cursor-pointer" color="yellow"
+                                            onClick={() => handleHighlightZone(zone)}
+                                        />
+                                        <RxCross2 className="inline-block ml-2 cursor-pointer" color="red" onClick={
+                                            () => handleDeleteZone(zone)
+                                        } />
+                                    </li>
+                                ))}
+                                <hr className="border-gray-600" />
+                            </>
+                        )}
+                        <li className="flex items-center justify-center pt-4">
+                            <button
+                                className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
+                                onClick={handleSubmitDrillZones}
+                            >
+                                Submit
+                            </button>
+                        </li>
+
+                    </ul>
+                </div>
             </div>
+
+
         </div>
     );
 };
