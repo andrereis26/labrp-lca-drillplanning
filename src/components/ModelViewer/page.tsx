@@ -67,7 +67,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
         // initialize camera
         camera.current = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-        camera.current.position.set(-218.2646848982529, 1483.5522302035865, 1588.6274986528704);
+        camera.current.position.set(303.6920306726477, 558.439396862245, 386.5463738073414);
         camera.current.lookAt(0, 0, 0);
 
         // initialize renderer
@@ -233,6 +233,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             z: object.current.position.z
         };
 
+        const objRotation = {
+            x: object.current.rotation.x,
+            y: object.current.rotation.y,
+            z: object.current.rotation.z
+        };
+
         const objectScale = {
             x: object.current.scale.x,
             y: object.current.scale.y,
@@ -240,14 +246,24 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
         };
 
         // Add controls for position and scale
-        objectFolder.add(objectPosition, 'x', -1000, 1000).name('X (red)').onChange((value: number) => {
+        objectFolder.add(objectPosition, 'x', -1000, 1000).name('Position X (red)').onChange((value: number) => {
             object.current.position.x = value;
         });
-        objectFolder.add(objectPosition, 'y', -1000, 1000).name('Y (green)').onChange((value: number) => {
+        objectFolder.add(objectPosition, 'y', -1000, 1000).name('Position Y (green)').onChange((value: number) => {
             object.current.position.y = value;
         });
-        objectFolder.add(objectPosition, 'z', -1000, 1000).name('Z (blue)').onChange((value: number) => {
+        objectFolder.add(objectPosition, 'z', -1000, 1000).name('Position Z (blue)').onChange((value: number) => {
             object.current.position.z = value;
+        });
+        // rotation controls
+        objectFolder.add(objRotation, 'x', -Math.PI, Math.PI).name('Rotation X (red)').onChange((value: number) => {
+            object.current.rotation.x = value;
+        });
+        objectFolder.add(objRotation, 'y', -Math.PI, Math.PI).name('Rotation Y (green)').onChange((value: number) => {
+            object.current.rotation.y = value;
+        });
+        objectFolder.add(objRotation, 'z', -Math.PI, Math.PI).name('Rotation Z (blue)').onChange((value: number) => {
+            object.current.rotation.z = value;
         });
         // scale controls
         objectFolder.add(objectScale, 'x', 0.1, 10).name('Scale X,Y,Z').onChange((value: number) => {
@@ -265,7 +281,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
             object.current.scale.z = value;
         });
         // reset object position and scale
-        objectFolder.add({ resetObject: () => resetObjectPositionAndScale() }, 'resetObject').name('Reset Object');
+        objectFolder.add({ resetObject: () => resetObjectProps() }, 'resetObject').name('Reset Object');
         objectFolder.open();
 
         // add controls for the grid and axis helpers
@@ -281,8 +297,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
 
         // reset object position and scale
-        const resetObjectPositionAndScale = () => {
+        const resetObjectProps = () => {
             object.current.position.set(0, 0, 0);
+            object.current.rotation.set(0, 0, 0);
             object.current.scale.set(1, 1, 1);
         };
 
@@ -319,8 +336,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
 
             });
 
-            loadedObject.position.set(0, 0, 0); // Adjust position as needed
-            loadedObject.scale.set(2, 2, 2); // Adjust scale as needed
+            loadedObject.position.set(0, 0, 0);
+            loadedObject.scale.set(1, 1, 1);
 
             // Add model to scene
             scene.add(loadedObject);
@@ -587,41 +604,26 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
         handleSubmitToServer(drillZonesPositions);
     }
 
-    // update drill zone
-    const handleUpdateDrillZone = (zone: THREE.Object3D) => {
+    // on changing the drill position, rotation, radius, height
+    useEffect(() => {
+        if (highlightedZone) {
+            highlightedZone.position.set(position.x, position.y, position.z);
+            highlightedZone.rotation.set(rotation.x, rotation.y, rotation.z);
 
-        // update zone
-        const newGeometry = new THREE.CylinderGeometry(
-            radius, // radiusTop
-            radius, // radiusBottom
-            height, // height
-            32, // radialSegments
-            1, // heightSegments
-            false, // openEnded
-        );
-        const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-        const newCylinder = new THREE.Mesh(newGeometry, material);
+            // parse highlighted zone to cylinder
+            const h = (highlightedZone as THREE.Mesh).geometry as THREE.CylinderGeometry;
+            const updatedGeometry = new THREE.CylinderGeometry(
+                radius,
+                radius,
+                height,
+                h.parameters.radialSegments,
+                h.parameters.heightSegments,
+                h.parameters.openEnded
+            );
+            (highlightedZone as THREE.Mesh).geometry = updatedGeometry;
+        }
 
-        newCylinder.position.set(position.x, position.y, position.z);
-        newCylinder.rotation.set(rotation.x, rotation.y, rotation.z);
-
-        // get zone index
-        const index = drillZones.findIndex(z => z === zone);
-
-        // delete the old zone
-        handleDeleteZone(zone);
-
-        // update the zone in the array
-        const updatedArray = [...drillZones];
-        updatedArray[index] = newCylinder;
-        setDrillZones(updatedArray);
-
-        // highlight the updated zone
-        setHighlightedZone(newCylinder);
-
-        // add the updated zone
-        object.current.add(newCylinder);
-    }
+    }, [radius, height, position, rotation]);
 
 
     return (
@@ -647,26 +649,48 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">Radius: </span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.scale.x}
+                                    type="range"
+                                    min={0.1}
+                                    max={100}
+                                    step={0.001}
                                     value={radius}
                                     onChange={(e) => setRadius(parseFloat(e.target.value))}
                                     placeholder="Radius"
-                                    className="border rounded p-1"
+                                    className="border rounded"
+                                />
+                                <input
+                                    type="number"
+                                    min={0.1}
+                                    max={100}
+                                    step={0.001}
+                                    value={radius}
+                                    onChange={(e) => setRadius(parseFloat(e.target.value))}
+                                    className="border rounded ml-1"
                                 />
                             </li>
                             {/* height */}
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">Height: </span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.scale.y}
+                                    type="range"
+                                    min={1}
+                                    max={100}
+                                    step={0.001}
                                     value={height}
                                     onChange={(e) => setHeight(parseFloat(e.target.value))}
                                     placeholder="Height"
-                                    className="border rounded p-1"
+                                    className="border rounded"
                                 />
-                            </li>z
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={100}
+                                    step={0.001}
+                                    value={height}
+                                    onChange={(e) => setHeight(parseFloat(e.target.value))}
+                                    className="border rounded ml-1"
+                                />
+                            </li>
                             <hr className="border-gray-600" />
                             {/* position */}
                             <li className="pb-1">
@@ -675,37 +699,67 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">X:</span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.position.x}
+                                    type="range"
+                                    min={-1000}
+                                    max={1000}
+                                    step={0.001}
                                     value={position.x}
                                     onChange={(e) => setPosition({ ...position, x: parseFloat(e.target.value) })}
                                     placeholder="Position X"
-                                    className="border rounded p-1"
-                                    step="0.000001"
+                                    className="border rounded"
+                                />
+                                <input
+                                    type="number"
+                                    min={-1000}
+                                    max={1000}
+                                    step={0.001}
+                                    value={position.x}
+                                    onChange={(e) => setPosition({ ...position, x: parseFloat(e.target.value) })}
+                                    className="border rounded ml-1"
                                 />
                             </li>
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">Y:</span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.position.y}
+                                    type="range"
+                                    min={-1000}
+                                    max={1000}
+                                    step={0.001}
                                     value={position.y}
                                     onChange={(e) => setPosition({ ...position, y: parseFloat(e.target.value) })}
                                     placeholder="Position Y"
-                                    className="border rounded p-1"
-                                    step="0.000001"
+                                    className="border rounded"
+                                />
+                                <input
+                                    type="number"
+                                    min={-1000}
+                                    max={1000}
+                                    step={0.001}
+                                    value={position.y}
+                                    onChange={(e) => setPosition({ ...position, y: parseFloat(e.target.value) })}
+                                    className="border rounded ml-1"
                                 />
                             </li>
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">Z:</span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.position.z}
+                                    type="range"
+                                    min={-1000}
+                                    max={1000}
+                                    step={0.001}
                                     value={position.z}
                                     onChange={(e) => setPosition({ ...position, z: parseFloat(e.target.value) })}
                                     placeholder="Position Z"
-                                    className="border rounded p-1"
-                                    step="0.000001"
+                                    className="border rounded"
+                                />
+                                <input
+                                    type="number"
+                                    min={-100}
+                                    max={100}
+                                    step={0.001}
+                                    value={position.z}
+                                    onChange={(e) => setPosition({ ...position, z: parseFloat(e.target.value) })}
+                                    className="border rounded ml-1"
                                 />
                             </li>
                             {/* rotation */}
@@ -715,47 +769,68 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">X:</span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.rotation.x}
+                                    type="range"
+                                    min={-180}
+                                    max={180}
+                                    step={0.001}
                                     value={rotation.x}
                                     onChange={(e) => setRotation({ ...rotation, x: parseFloat(e.target.value) })}
                                     placeholder="Rotation X"
-                                    className="border rounded p-1"
-                                    step="0.000001"
+                                    className="border rounded"
+                                />
+                                <input
+                                    type="number"
+                                    min={-180}
+                                    max={180}
+                                    step={0.001}
+                                    value={rotation.x}
+                                    onChange={(e) => setRotation({ ...rotation, x: parseFloat(e.target.value) })}
+                                    className="border rounded ml-1"
                                 />
                             </li>
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">Y:</span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.rotation.y}
+                                    type="range"
+                                    min={-180}
+                                    max={180}
+                                    step={0.001}
                                     value={rotation.y}
                                     onChange={(e) => setRotation({ ...rotation, y: parseFloat(e.target.value) })}
                                     placeholder="Rotation Y"
-                                    className="border rounded p-1"
-                                    step="0.000001"
+                                    className="border rounded"
+                                />
+                                <input
+                                    type="number"
+                                    min={-180}
+                                    max={180}
+                                    step={0.001}
+                                    value={rotation.y}
+                                    onChange={(e) => setRotation({ ...rotation, y: parseFloat(e.target.value) })}
+                                    className="border rounded ml-1"
                                 />
                             </li>
                             <li className="pb-1">
                                 <span className="text-black dark:text-white">Z:</span>
                                 <input
-                                    type="number"
-                                    defaultValue={highlightedZone.rotation.z}
+                                    type="range"
+                                    min={-180}
+                                    max={180}
+                                    step={0.001}
                                     value={rotation.z}
                                     onChange={(e) => setRotation({ ...rotation, z: parseFloat(e.target.value) })}
                                     placeholder="Rotation Z"
-                                    className="border rounded p-1"
-                                    step="0.000001"
+                                    className="border rounded"
                                 />
-                            </li>
-                            <hr className="border-gray-600" />
-                            <li className="flex items-center justify-center pt-4">
-                                <button
-                                    className="bg-green-700 hover:bg-green-800 text-white rounded p-1"
-                                    onClick={() => handleUpdateDrillZone(highlightedZone)}
-                                >
-                                    Update
-                                </button>
+                                <input
+                                    type="number"
+                                    min={-180}
+                                    max={180}
+                                    step={0.001}
+                                    value={rotation.z}
+                                    onChange={(e) => setRotation({ ...rotation, z: parseFloat(e.target.value) })}
+                                    className="border rounded ml-1"
+                                />
                             </li>
                         </ul>
                     </div>
@@ -779,7 +854,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                                 <hr className="border-gray-600 pb-1" />
                                 {drillZones.map((zone, index) => (
                                     <li key={index} className={`pb-1 border-b ${highlightedRow === index ? 'bg-gray-300 dark:bg-gray-600' : ''}`}>
-                                         <li key={index} className="pb-1 bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 "></li>
                                         <span className="text-black dark:text-white" onClick={() => {
                                             handleHighlightZone(zone)
                                         }}>Drill Zone {index + 1}</span>
