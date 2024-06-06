@@ -1,7 +1,8 @@
 import { Coords } from "./Coords";
+import { Rotation } from "./Rotation";
 
 export interface DrillZone{
-    rotation: Coords,
+    rotation: Rotation,
     position: Coords,
     height: number,
     radius: number;

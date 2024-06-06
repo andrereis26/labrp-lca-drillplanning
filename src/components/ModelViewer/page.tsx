@@ -573,7 +573,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
                 rotation: {
                     x: zone.rotation.x,
                     y: zone.rotation.y,
-                    z: zone.rotation.z
+                    z: zone.rotation.z,
+                    w: zone.quaternion.w
                 },
                 height: height,
                 radius: radius
@@ -609,7 +610,6 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ file }) => {
         if (highlightedZone) {
             highlightedZone.position.set(position.x, position.y, position.z);
             highlightedZone.rotation.set(rotation.x, rotation.y, rotation.z);
-
             // parse highlighted zone to cylinder
             const h = (highlightedZone as THREE.Mesh).geometry as THREE.CylinderGeometry;
             const updatedGeometry = new THREE.CylinderGeometry(
