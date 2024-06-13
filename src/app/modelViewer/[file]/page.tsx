@@ -30,7 +30,7 @@ const ModelViewerPage = ({ params }: { params: { file: string } }) => {
         const loadData = async () => {
             const data = await fetchData(params.file);
             if (!data) {
-                // router.push(config.pageRoutes.home);
+                router.push(config.pageRoutes.home);
                 return;
             }
                         
